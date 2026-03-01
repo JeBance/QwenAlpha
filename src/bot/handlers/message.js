@@ -1,5 +1,6 @@
 const sessionService = require('../../services/db/sessions');
 const statsService = require('../../services/db/stats');
+const userService = require('../../services/db/users');
 const { qwenService } = require('../../services/qwenService');
 const { logger } = require('../../utils/logger');
 
@@ -41,36 +42,49 @@ async function messageHandler(ctx) {
   }
   
   // Загрузка индикатора
-  const loadingMsg = isPrivate
-    ? await ctx.reply('⏳ Думаю...')
-    : null;
-  
+  let loadingMsgId = null;
+  if (isPrivate) {
+    const loadingMsg = await ctx.reply('⏳ Думаю...');
+    loadingMsgId = loadingMsg?.message_id;
+  }
+
   try {
     const startTime = Date.now();
-    
+
     // Получение контекста из сессии
     let contextMessages = [];
     let session = ctx.state.session;
-    
+
     if (session) {
       // Если это reply на сообщение в сессии
       const replyToMessageId = ctx.message?.reply_to_message?.message_id;
-      
+
       if (replyToMessageId && session.message_tree[replyToMessageId]) {
         // Получаем цепочку сообщений
         contextMessages = sessionService.getMessageChain(session, replyToMessageId);
       }
     }
-    
+
     // Запрос к Qwen
     const result = await qwenService.analyzeCode(prompt, contextMessages);
-    
+
     const duration = Date.now() - startTime;
     statsService.updateAvgResponseTime(duration);
-    
+
+    // Проверка на пустой ответ
+    if (!result || result.trim().length === 0) {
+      if (loadingMsgId) {
+        await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId);
+      }
+      await ctx.reply('❌ Qwen вернул пустой ответ. Попробуйте другой запрос.', {
+        reply_parameters: { message_id: ctx.message.message_id },
+      });
+      return;
+    }
+
     // Форматирование ответа
     let responseText = result;
-    
+
     // В группах добавляем упоминание если это первый ответ
     if (!isPrivate && ctx.message?.reply_to_message) {
       const originalUser = ctx.message.reply_to_message.from;
@@ -78,17 +92,17 @@ async function messageHandler(ctx) {
         responseText = `@${originalUser.username} ${responseText}`;
       }
     }
-    
+
     // Отправка ответа
-    if (loadingMsg) {
-      await ctx.editMessageText(responseText, { parse_mode: 'Markdown' });
-    } else {
-      // В группах отвечаем reply на исходное сообщение
-      await ctx.reply(responseText, {
-        parse_mode: 'Markdown',
-        reply_parameters: { message_id: ctx.message.message_id },
-      });
+    if (loadingMsgId) {
+      // Удаляем сообщение "⏳ Думаю..." и отправляем новый ответ
+      await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId);
     }
+    
+    await ctx.reply(responseText, {
+      parse_mode: 'Markdown',
+      reply_parameters: { message_id: ctx.message.message_id },
+    });
     
     // Добавление сообщений в сессию
     if (session) {
@@ -114,19 +128,18 @@ async function messageHandler(ctx) {
     
   } catch (error) {
     logger.error({ userId, chatId, error }, 'Message processing failed');
-    
-    if (loadingMsg) {
-      await ctx.editMessageText('❌ Ошибка при обработке запроса. Попробуйте позже.');
-    } else {
-      await ctx.reply('❌ Ошибка при обработке запроса. Попробуйте позже.', {
-        reply_parameters: { message_id: ctx.message.message_id },
-      });
+
+    // Удаляем сообщение "⏳ Думаю..." если есть
+    if (loadingMsgId) {
+      await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId).catch(() => {});
     }
     
+    await ctx.reply('❌ Ошибка при обработке запроса. Попробуйте позже.', {
+      reply_parameters: { message_id: ctx.message.message_id },
+    });
+
     statsService.incrementError();
   }
 }
-
-const userService = require('../../services/db/users');
 
 module.exports = messageHandler;
