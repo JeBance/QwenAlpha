@@ -38,27 +38,32 @@ async function sessionMiddleware(ctx, next) {
       ctx.state.sessionKey = sessionKey;
     }
   } else {
-    // Групповой чат - поиск сессии по reply или создание новой
-    const replyToMessageId = ctx.message?.reply_to_message?.message_id;
-
-    if (replyToMessageId) {
-      // Поиск сессии по сообщению, на которое ответили
-      const session = sessionService.findByMessage(chatId, replyToMessageId);
-
-      if (session) {
-        ctx.state.session = session;
-        ctx.state.sessionKey = `chat:${chatId}`;
-        ctx.state.replyToSession = true;
-      }
+    // Групповой чат - всегда используем последнюю активную сессию
+    const chatSessions = sessionService.getChatSessions(chatId);
+    let activeSession = chatSessions.find(s => s.status === 'active');
+    
+    // Если сессии нет - создаём новую
+    if (!activeSession) {
+      activeSession = sessionService.create({
+        userId,
+        chatId,
+        rootMessageId: ctx.message?.message_id || 1,
+        chatType: ctx.chat.type,
+        chatTitle: ctx.chat.title,
+      });
     }
     
-    // Если сессии нет, ищем последнюю активную сессию чата
-    if (!ctx.state.session) {
-      const chatSessions = sessionService.getChatSessions(chatId);
-      const activeSession = chatSessions.find(s => s.status === 'active');
-      if (activeSession) {
-        ctx.state.session = activeSession;
-        ctx.state.sessionKey = `chat:${chatId}`;
+    if (activeSession) {
+      ctx.state.session = activeSession;
+      ctx.state.sessionKey = `chat:${chatId}`;
+    }
+    
+    // Если есть reply, проверяем принадлежит ли оно этой сессии
+    const replyToMessageId = ctx.message?.reply_to_message?.message_id;
+    if (replyToMessageId && activeSession) {
+      // Проверяем есть ли сообщение в дереве сессии
+      if (activeSession.message_tree[replyToMessageId]) {
+        ctx.state.replyToSession = true;
       }
     }
   }

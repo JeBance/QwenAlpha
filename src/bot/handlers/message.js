@@ -55,26 +55,22 @@ async function messageHandler(ctx) {
     let contextMessages = [];
     let session = ctx.state.session;
 
-    // Если сессии нет в группе - создаём новую
-    if (!session && !isPrivate) {
-      session = sessionService.create({
-        userId,
-        chatId,
-        rootMessageId: ctx.message.message_id,
-        chatType: ctx.chat.type,
-        chatTitle: ctx.chat.title,
-      });
-      ctx.state.session = session;
-      statsService.incrementSessionCreated();
-    }
-
     if (session) {
-      // Если это reply на сообщение в сессии
+      // Если это reply на сообщение в сессии — получаем полную цепочку
       const replyToMessageId = ctx.message?.reply_to_message?.message_id;
 
       if (replyToMessageId && session.message_tree[replyToMessageId]) {
-        // Получаем цепочку сообщений
         contextMessages = sessionService.getMessageChain(session, replyToMessageId);
+      } else {
+        // Если не reply, берём последние N сообщений из сессии
+        const allMessages = Object.values(session.message_tree)
+          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+          .slice(-10); // Последние 10 сообщений
+        
+        contextMessages = allMessages.map(msg => ({
+          role: msg.user_id === 'bot' ? 'assistant' : 'user',
+          content: msg.text || '',
+        }));
       }
     }
 
