@@ -104,8 +104,11 @@ async function messageHandler(ctx) {
     const chunks = splitMessage(responseText, maxMessageLength);
 
     for (let i = 0; i < chunks.length; i++) {
+      // Используем Markdown только для коротких ответов без JSON
+      const useMarkdown = chunks.length === 1 && !responseText.startsWith('{');
+      
       await ctx.reply(chunks[i], {
-        parse_mode: 'Markdown',
+        parse_mode: useMarkdown ? 'Markdown' : undefined,
         reply_parameters: { message_id: ctx.message.message_id },
       });
     }

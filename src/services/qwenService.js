@@ -203,12 +203,13 @@ class QwenService {
         }
       }
 
-      // Fallback: возврат всего stdout
-      return stdout.trim();
+      // Fallback: короткое сообщение вместо всего stdout
+      return 'Qwen вернул ответ в нестандартном формате. Попробуйте упростить запрос.';
 
     } catch (parseError) {
       logger.warn({ parseError, stdout: stdout?.substring(0, 500) }, 'Failed to parse Qwen JSON response');
-      return stdout.trim();
+      // Возвращаем короткое сообщение об ошибке вместо всего stdout
+      return 'Qwen вернул ответ в нестандартном формате. Попробуйте упростить запрос.';
     }
   }
   
