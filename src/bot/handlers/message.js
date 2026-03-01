@@ -95,14 +95,20 @@ async function messageHandler(ctx) {
 
     // Отправка ответа
     if (loadingMsgId) {
-      // Удаляем сообщение "⏳ Думаю..." и отправляем новый ответ
-      await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId);
+      // Удаляем сообщение "⏳ Думаю..."
+      await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId).catch(() => {});
     }
-    
-    await ctx.reply(responseText, {
-      parse_mode: 'Markdown',
-      reply_parameters: { message_id: ctx.message.message_id },
-    });
+
+    // Разбивка длинного ответа на части (Telegram лимит 4096 символов)
+    const maxMessageLength = 4000;
+    const chunks = splitMessage(responseText, maxMessageLength);
+
+    for (let i = 0; i < chunks.length; i++) {
+      await ctx.reply(chunks[i], {
+        parse_mode: 'Markdown',
+        reply_parameters: { message_id: ctx.message.message_id },
+      });
+    }
     
     // Добавление сообщений в сессию
     if (session) {
@@ -140,6 +146,42 @@ async function messageHandler(ctx) {
 
     statsService.incrementError();
   }
+}
+
+/**
+ * Разбиение длинного сообщения на части
+ * @param {string} text - Текст для разбиения
+ * @param {number} maxLength - Максимальная длина
+ * @returns {string[]} Массив частей
+ */
+function splitMessage(text, maxLength) {
+  const chunks = [];
+  
+  if (text.length <= maxLength) {
+    return [text];
+  }
+  
+  let remaining = text;
+  
+  while (remaining.length > maxLength) {
+    // Ищем ближайший перенос строки или пробел
+    let splitIndex = remaining.lastIndexOf('\n', maxLength);
+    if (splitIndex === -1 || splitIndex < maxLength / 2) {
+      splitIndex = remaining.lastIndexOf(' ', maxLength);
+    }
+    if (splitIndex === -1) {
+      splitIndex = maxLength;
+    }
+    
+    chunks.push(remaining.substring(0, splitIndex));
+    remaining = remaining.substring(splitIndex).trim();
+  }
+  
+  if (remaining.length > 0) {
+    chunks.push(remaining);
+  }
+  
+  return chunks;
 }
 
 module.exports = messageHandler;

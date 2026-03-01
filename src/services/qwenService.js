@@ -160,45 +160,54 @@ class QwenService {
         return stdout.trim();
       }
 
-      // Поиск последнего сообщения от assistant с текстом
-      const assistantMessages = messages.filter(m => m.type === 'assistant' && m.message?.content);
-      const lastAssistantMessage = assistantMessages.length > 0 
-        ? assistantMessages[assistantMessages.length - 1] 
-        : null;
-
-      if (lastAssistantMessage?.message?.content) {
-        const content = lastAssistantMessage.message.content;
-
-        // Content может быть строкой или массивом
-        if (typeof content === 'string') {
-          return content;
-        }
-
-        if (Array.isArray(content)) {
-          // Поиск текстовой части (может быть thinking + text)
-          const textPart = content.find(part => part.type === 'text');
-          if (textPart?.text) {
-            return textPart.text;
+      // Поиск всех сообщений от assistant с текстом
+      const textContents = [];
+      
+      for (const msg of messages) {
+        if (msg.type === 'assistant' && msg.message?.content) {
+          const content = msg.message.content;
+          
+          if (Array.isArray(content)) {
+            // Ищем текстовые части
+            for (const part of content) {
+              if (part.type === 'text' && part.text) {
+                textContents.push(part.text);
+              }
+            }
+          } else if (typeof content === 'string') {
+            textContents.push(content);
           }
-          // Fallback: объединение всех текстовых частей
-          return content
-            .filter(part => part.type === 'text')
-            .map(part => part.text)
-            .join('\n');
+        }
+        
+        // Также проверяем result сообщение
+        if (msg.type === 'result' && msg.result) {
+          textContents.push(msg.result);
         }
       }
+      
+      // Если нашли текст — возвращаем
+      if (textContents.length > 0) {
+        return textContents.join('\n\n');
+      }
 
-      // Поиск result сообщения (fallback)
-      const resultMessage = messages.find(m => m.type === 'result');
-      if (resultMessage?.result) {
-        return resultMessage.result;
+      // Fallback: если нет текста, пробуем извлечь информацию из tool_use
+      const toolMessages = messages.filter(m => m.type === 'assistant' && m.message?.content?.some(c => c.type === 'tool_use'));
+      if (toolMessages.length > 0) {
+        const toolInfo = toolMessages.map(m => {
+          const tools = m.message.content.filter(c => c.type === 'tool_use');
+          return tools.map(t => `Использует инструмент: ${t.name}`).join('; ');
+        }).join('. ');
+        
+        if (toolInfo) {
+          return `Qwen анализирует: ${toolInfo}. Пожалуйста, уточните запрос для получения текстового ответа.`;
+        }
       }
 
       // Fallback: возврат всего stdout
       return stdout.trim();
 
     } catch (parseError) {
-      logger.warn({ parseError, stdout }, 'Failed to parse Qwen JSON response');
+      logger.warn({ parseError, stdout: stdout?.substring(0, 500) }, 'Failed to parse Qwen JSON response');
       return stdout.trim();
     }
   }
