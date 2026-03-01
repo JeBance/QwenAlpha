@@ -1,0 +1,21 @@
+# Исключения для npm publish
+node_modules/
+npm-debug.log*
+.env
+.env.*
+logs/
+*.log
+.git/
+.github/
+.idea/
+.vscode/
+tests/
+coverage/
+dist/
+build/
+tmp/
+temp/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
