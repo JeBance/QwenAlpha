@@ -167,9 +167,12 @@ class QwenService {
       for (const msg of messages) {
         // Сначала проверяем result сообщение (оно содержит финальный ответ)
         if (msg.type === 'result' && msg.result) {
-          textContents.push(msg.result);
-          hasResult = true;
-          break; // result — это финальный ответ, дальше не ищем
+          // result должен быть строкой, а не объектом
+          if (typeof msg.result === 'string' && msg.result.length < 10000) {
+            textContents.push(msg.result);
+            hasResult = true;
+            break;
+          }
         }
       }
 
@@ -195,8 +198,12 @@ class QwenService {
       
       // Если нашли текст — возвращаем
       if (textContents.length > 0) {
-        return textContents.join('\n\n');
+        const result = textContents.join('\n\n');
+        logger.debug({ resultLength: result.length, hasResult }, 'Parsed Qwen response');
+        return result;
       }
+
+      logger.warn({ hasResult, textContents: textContents.length }, 'No text found in Qwen response');
 
       // Fallback: если нет текста, пробуем извлечь информацию из tool_use
       const toolMessages = messages.filter(m => m.type === 'assistant' && m.message?.content?.some(c => c.type === 'tool_use'));
