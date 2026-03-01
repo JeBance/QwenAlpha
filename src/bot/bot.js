@@ -24,7 +24,7 @@ const fileHandler = require('./handlers/file');
  */
 async function initBot(token, config = {}) {
   const bot = new Telegraf(token, {
-    handlerTimeout: 30, // Таймаут обработки (секунды)
+    handlerTimeout: 30000, // Таймаут обработки (30 секунд)
   });
   
   // Глобальная обработка ошибок
