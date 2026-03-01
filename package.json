@@ -4,7 +4,7 @@
   "description": "Telegram bot for Qwen Code integration — AI-powered code review, bug detection, and code generation",
   "main": "src/index.js",
   "bin": {
-    "qwen-alpha": "./bin/qwen-alpha.js"
+    "qwen-alpha": "bin/qwen-alpha.js"
   },
   "scripts": {
     "start": "node bin/qwen-alpha.js",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JeBance/QwenAlpha.git"
+    "url": "git+https://github.com/JeBance/QwenAlpha.git"
   },
   "bugs": {
     "url": "https://github.com/JeBance/QwenAlpha/issues"
