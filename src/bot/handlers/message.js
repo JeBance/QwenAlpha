@@ -55,6 +55,19 @@ async function messageHandler(ctx) {
     let contextMessages = [];
     let session = ctx.state.session;
 
+    // Если сессии нет в группе - создаём новую
+    if (!session && !isPrivate) {
+      session = sessionService.create({
+        userId,
+        chatId,
+        rootMessageId: ctx.message.message_id,
+        chatType: ctx.chat.type,
+        chatTitle: ctx.chat.title,
+      });
+      ctx.state.session = session;
+      statsService.incrementSessionCreated();
+    }
+
     if (session) {
       // Если это reply на сообщение в сессии
       const replyToMessageId = ctx.message?.reply_to_message?.message_id;
@@ -85,8 +98,8 @@ async function messageHandler(ctx) {
     // Форматирование ответа
     let responseText = result;
 
-    // В группах добавляем упоминание если это первый ответ
-    if (!isPrivate && ctx.message?.reply_to_message) {
+    // В группах добавляем упоминание только если отвечаем на сообщение пользователя (не бота)
+    if (!isPrivate && ctx.message?.reply_to_message && !ctx.message.reply_to_message.from.is_bot) {
       const originalUser = ctx.message.reply_to_message.from;
       if (originalUser?.username) {
         responseText = `@${originalUser.username} ${responseText}`;

@@ -1,6 +1,6 @@
 {
   "name": "qwen-alpha",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Telegram bot for Qwen Code integration — AI-powered code review, bug detection, and code generation",
   "main": "src/index.js",
   "bin": {

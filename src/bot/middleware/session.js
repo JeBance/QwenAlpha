@@ -38,17 +38,27 @@ async function sessionMiddleware(ctx, next) {
       ctx.state.sessionKey = sessionKey;
     }
   } else {
-    // Групповой чат - поиск сессии по reply
+    // Групповой чат - поиск сессии по reply или создание новой
     const replyToMessageId = ctx.message?.reply_to_message?.message_id;
-    
+
     if (replyToMessageId) {
       // Поиск сессии по сообщению, на которое ответили
       const session = sessionService.findByMessage(chatId, replyToMessageId);
-      
+
       if (session) {
         ctx.state.session = session;
         ctx.state.sessionKey = `chat:${chatId}`;
         ctx.state.replyToSession = true;
+      }
+    }
+    
+    // Если сессии нет, ищем последнюю активную сессию чата
+    if (!ctx.state.session) {
+      const chatSessions = sessionService.getChatSessions(chatId);
+      const activeSession = chatSessions.find(s => s.status === 'active');
+      if (activeSession) {
+        ctx.state.session = activeSession;
+        ctx.state.sessionKey = `chat:${chatId}`;
       }
     }
   }
