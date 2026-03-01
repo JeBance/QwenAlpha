@@ -1,6 +1,6 @@
 {
   "name": "qwen-alpha",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Telegram bot for Qwen Code integration — AI-powered code review, bug detection, and code generation",
   "main": "src/index.js",
   "bin": {
@@ -40,8 +40,7 @@
     "telegraf": "^4.16.3",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
-    "pino": "^8.17.2",
-    "pino-pretty": "^10.2.3"
+    "pino": "^8.17.2"
   },
   "devDependencies": {
     "eslint": "^8.56.0",

@@ -1,33 +1,6 @@
 const pino = require('pino');
-const path = require('path');
-const { DIRECTORIES, getLogFilePath } = require('./paths');
-
-/**
- * Создаёт транспорт для записи логов в файл с ежедневной ротацией
- */
-function createFileTransport() {
-  return {
-    target: 'pino/file',
-    options: {
-      destination: getLogFilePath(),
-      mkdir: true,
-    },
-  };
-}
-
-/**
- * Создаёт транспорт для вывода в консоль (pretty)
- */
-function createPrettyTransport() {
-  return {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
-    },
-  };
-}
+const fs = require('fs');
+const { DIRECTORIES, getLogFilePath, initDirectories } = require('./paths');
 
 /**
  * Получает уровень логирования из переменных окружения
@@ -46,6 +19,20 @@ function getLogLevel() {
 function createLogger() {
   const level = getLogLevel();
   
+  // Инициализация директорий
+  initDirectories();
+  
+  // Поток для файла логов
+  const logFilePath = getLogFilePath();
+  let fileStream;
+  
+  try {
+    fileStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+  } catch (error) {
+    console.error('Failed to create log file stream:', error.message);
+    fileStream = process.stdout;
+  }
+  
   return pino({
     level,
     formatters: {
@@ -53,11 +40,8 @@ function createLogger() {
     },
     timestamp: pino.stdTimeFunctions.isoTime,
   }, pino.multistream([
-    createFileTransport(),
-    {
-      stream: process.stdout,
-      level,
-    },
+    { stream: fileStream, level },
+    { stream: process.stdout, level },
   ]));
 }
 
