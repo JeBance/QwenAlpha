@@ -142,41 +142,49 @@ class QwenService {
   _parseJsonResponse(stdout) {
     try {
       const messages = JSON.parse(stdout.trim());
-      
+
       if (!Array.isArray(messages)) {
         logger.warn({ stdout }, 'Unexpected Qwen response format');
         return stdout.trim();
       }
-      
-      // Поиск сообщения от assistant
-      const assistantMessage = messages.find(m => m.type === 'assistant');
-      
-      if (assistantMessage?.message?.content) {
-        const content = assistantMessage.message.content;
-        
+
+      // Поиск последнего сообщения от assistant с текстом
+      const assistantMessages = messages.filter(m => m.type === 'assistant' && m.message?.content);
+      const lastAssistantMessage = assistantMessages.length > 0 
+        ? assistantMessages[assistantMessages.length - 1] 
+        : null;
+
+      if (lastAssistantMessage?.message?.content) {
+        const content = lastAssistantMessage.message.content;
+
         // Content может быть строкой или массивом
         if (typeof content === 'string') {
           return content;
         }
-        
+
         if (Array.isArray(content)) {
-          // Объединение текстовых частей
+          // Поиск текстовой части (может быть thinking + text)
+          const textPart = content.find(part => part.type === 'text');
+          if (textPart?.text) {
+            return textPart.text;
+          }
+          // Fallback: объединение всех текстовых частей
           return content
             .filter(part => part.type === 'text')
             .map(part => part.text)
             .join('\n');
         }
       }
-      
-      // Поиск result сообщения
+
+      // Поиск result сообщения (fallback)
       const resultMessage = messages.find(m => m.type === 'result');
       if (resultMessage?.result) {
         return resultMessage.result;
       }
-      
+
       // Fallback: возврат всего stdout
       return stdout.trim();
-      
+
     } catch (parseError) {
       logger.warn({ parseError, stdout }, 'Failed to parse Qwen JSON response');
       return stdout.trim();
