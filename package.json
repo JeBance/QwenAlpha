@@ -1,0 +1,50 @@
+{
+  "name": "qwen-alpha",
+  "version": "1.0.0",
+  "description": "Telegram bot for Qwen Code integration — AI-powered code review, bug detection, and code generation",
+  "main": "src/index.js",
+  "bin": {
+    "qwen-alpha": "./bin/qwen-alpha.js"
+  },
+  "scripts": {
+    "start": "node bin/qwen-alpha.js",
+    "test": "node --test tests/",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "qwen",
+    "code",
+    "ai",
+    "cli",
+    "code-review",
+    "assistant"
+  ],
+  "author": "JeBance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JeBance/QwenAlpha.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JeBance/QwenAlpha/issues"
+  },
+  "homepage": "https://github.com/JeBance/QwenAlpha#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.2.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1"
+  }
+}
