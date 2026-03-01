@@ -162,26 +162,34 @@ class QwenService {
 
       // Поиск всех сообщений от assistant с текстом
       const textContents = [];
-      
+      let hasResult = false;
+
       for (const msg of messages) {
-        if (msg.type === 'assistant' && msg.message?.content) {
-          const content = msg.message.content;
-          
-          if (Array.isArray(content)) {
-            // Ищем текстовые части
-            for (const part of content) {
-              if (part.type === 'text' && part.text) {
-                textContents.push(part.text);
-              }
-            }
-          } else if (typeof content === 'string') {
-            textContents.push(content);
-          }
-        }
-        
-        // Также проверяем result сообщение
+        // Сначала проверяем result сообщение (оно содержит финальный ответ)
         if (msg.type === 'result' && msg.result) {
           textContents.push(msg.result);
+          hasResult = true;
+          break; // result — это финальный ответ, дальше не ищем
+        }
+      }
+
+      // Если нет result, ищем text в assistant сообщениях
+      if (!hasResult) {
+        for (const msg of messages) {
+          if (msg.type === 'assistant' && msg.message?.content) {
+            const content = msg.message.content;
+
+            if (Array.isArray(content)) {
+              // Ищем текстовые части
+              for (const part of content) {
+                if (part.type === 'text' && part.text) {
+                  textContents.push(part.text);
+                }
+              }
+            } else if (typeof content === 'string') {
+              textContents.push(content);
+            }
+          }
         }
       }
       
