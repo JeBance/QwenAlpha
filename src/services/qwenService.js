@@ -84,15 +84,18 @@ class QwenService {
         .map(msg => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
         .join('\n');
 
-      fullPrompt = `${contextText}\n\nUser: ${code}`;
+      // Явно указываем что это продолжение диалога
+      fullPrompt = `Продолжи диалог. Контекст:\n${contextText}\n\nUser: ${code}`;
     }
 
     // Создаём временный файл с промптом
     const tempFile = path.join(os.tmpdir(), `qwen-alpha-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.txt`);
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
-    // Команда для Qwen с чтением из файла
-    const command = `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json`;
+    // Команда для Qwen — без системного промпта если есть контекст
+    const command = contextMessages.length > 0
+      ? `cat '${tempFile}' | qwen -o json`
+      : `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json`;
 
     logger.debug({ codeLength: code.length, contextLength: contextMessages.length, tempFile }, 'Running Qwen analysis');
 

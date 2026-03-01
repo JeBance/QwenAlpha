@@ -137,9 +137,18 @@ async function messageHandler(ctx) {
         text: prompt,
         type: 'user_question',
       });
-      
-      // Добавляем ответ бота (будет добавлен после отправки)
-      // sessionService.addMessage({...})
+
+      // Добавляем ответ бота
+      const botMessageId = ctx.message.message_id + 1; // Приблизительно
+      sessionService.addMessage({
+        sessionId: session.session_id,
+        chatId,
+        messageId: botMessageId,
+        userId: 'bot',
+        text: responseText,
+        type: 'bot_response',
+        parent_id: ctx.message.message_id,
+      });
     }
     
     // Обновление статистики
