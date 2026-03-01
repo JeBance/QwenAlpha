@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { DB_FILES, initDirectories } = require('../utils/paths');
-const { logger } = require('../utils/logger');
+const { DB_FILES, initDirectories } = require('../../utils/paths');
+const { logger } = require('../../utils/logger');
 
 /**
  * Базовый класс для JSON хранилища
