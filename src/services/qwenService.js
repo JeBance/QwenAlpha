@@ -1,5 +1,8 @@
 const { exec } = require('child_process');
 const { promisify } = require('util');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const { logger } = require('../utils/logger');
 const config = require('../config');
 
@@ -61,7 +64,7 @@ class QwenService {
    */
   async analyzeCode(code, contextMessages = []) {
     const startTime = Date.now();
-    
+
     // Проверка доступности Qwen
     const isAvailable = await this.checkAvailability();
     if (!isAvailable) {
@@ -71,32 +74,38 @@ class QwenService {
         'QWEN_NOT_INSTALLED'
       );
     }
-    
+
     // Формирование промпта с контекстом
     let fullPrompt = code;
-    
+
     if (contextMessages && contextMessages.length > 0) {
       // Добавляем контекст диалога
       const contextText = contextMessages
         .map(msg => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
         .join('\n');
-      
+
       fullPrompt = `${contextText}\n\nUser: ${code}`;
     }
-    
-    // Команда для Qwen
-    const escapedPrompt = this._escapeShell(fullPrompt);
-    const command = `echo '${escapedPrompt}' | qwen -p "Проанализируй код и дай рекомендации" -o json`;
-    
-    logger.debug({ codeLength: code.length, contextLength: contextMessages.length }, 'Running Qwen analysis');
-    
+
+    // Создаём временный файл с промптом
+    const tempFile = path.join(os.tmpdir(), `qwen-alpha-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.txt`);
+    fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
+
+    // Команда для Qwen с чтением из файла
+    const command = `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json`;
+
+    logger.debug({ codeLength: code.length, contextLength: contextMessages.length, tempFile }, 'Running Qwen analysis');
+
     try {
       const { stdout, stderr } = await execAsync(command, {
         timeout: config.qwen.timeout,
         maxBuffer: config.qwen.maxBuffer,
         env: { ...process.env },
       });
-      
+
+      // Удаляем временный файл
+      try { fs.unlinkSync(tempFile); } catch (e) {}
+
       // Парсинг JSON ответа
       const result = this._parseJsonResponse(stdout);
       
@@ -104,10 +113,13 @@ class QwenService {
       logger.info({ duration, resultLength: result.length }, 'Qwen analysis completed');
       
       return result;
-      
+
     } catch (error) {
-      logger.error({ error, stderr }, 'Qwen analysis failed');
+      // Удаляем временный файл при ошибке
+      try { fs.unlinkSync(tempFile); } catch (e) {}
       
+      logger.error({ error, stderr }, 'Qwen analysis failed');
+
       // Обработка различных типов ошибок
       if (error.killed && error.signal === 'SIGTERM') {
         throw new QwenError(
@@ -116,7 +128,7 @@ class QwenService {
           'TIMEOUT'
         );
       }
-      
+
       if (error.message.includes('maxBuffer')) {
         throw new QwenError(
           'Ответ слишком большой. Попробуйте меньший фрагмент кода.',
@@ -124,7 +136,7 @@ class QwenService {
           'BUFFER_EXCEEDED'
         );
       }
-      
+
       throw new QwenError(
         `Ошибка Qwen Code: ${error.message}`,
         error,
