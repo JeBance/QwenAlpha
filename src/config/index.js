@@ -20,9 +20,9 @@ module.exports = {
   /** Настройки Qwen Code */
   qwen: {
     /** Таймаут выполнения команды (мс) */
-    timeout: parseInt(process.env.QWEN_TIMEOUT, 10) || 60000,
+    timeout: parseInt(process.env.QWEN_TIMEOUT, 10) || 120000,
     /** Максимальный размер буфера (байты) */
-    maxBuffer: parseInt(process.env.QWEN_MAX_BUFFER, 10) || 2 * 1024 * 1024, // 2MB
+    maxBuffer: parseInt(process.env.QWEN_MAX_BUFFER, 10) || 10 * 1024 * 1024, // 10MB
     /** Максимальный размер файла для анализа (байты) */
     maxFileSize: 2 * 1024 * 1024, // 2MB
   },
