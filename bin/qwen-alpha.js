@@ -26,7 +26,7 @@ program
   .version(packageJson.version);
 
 program
-  .requiredOption('--token <TOKEN>', 'Telegram Bot API токен (получите у @BotFather)')
+  .option('--token <TOKEN>', 'Telegram Bot API токен (получите у @BotFather)')
   .option('--log-level <LEVEL>', 'Уровень логирования (debug, info, warn, error)', 'info')
   .option('--allowed-users <USERS>', 'Whitelist user_id через запятую (опционально)', '')
   .option('--init-only', 'Только инициализация хранилищ и выход', false)
