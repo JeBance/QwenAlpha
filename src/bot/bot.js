@@ -23,7 +23,7 @@ const fileHandler = require('./handlers/file');
  */
 async function initBot(token) {
   const bot = new Telegraf(token, {
-    handlerTimeout: 120000, // Таймаут обработки (120 секунд)
+    handlerTimeout: 360000, // Таймаут обработки (360 секунд = 6 минут)
   });
   bot.catch((err, ctx) => {
     logger.error(
@@ -36,7 +36,13 @@ async function initBot(token) {
       'Bot error caught'
     );
 
-    // Не показываем пользователю технические детали
+    // Не показываем ошибку если это таймаут (Qwen ещё работает)
+    if (err?.type === 'TimeoutError') {
+      logger.warn({ userId: ctx?.from?.id }, 'Request timeout - Qwen still processing');
+      return;
+    }
+
+    // Не показываем пользователю технические детали для других ошибок
     if (ctx && ctx.reply) {
       ctx.reply('⚠️ Произошла ошибка. Попробуйте позже.').catch(() => {});
     }
