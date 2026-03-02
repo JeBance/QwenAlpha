@@ -72,11 +72,16 @@ async function startBot(options = {}) {
         // Потом остальным админам
         const otherAdmins = allAdmins.filter((a) => !a.isSuperAdmin);
         for (const admin of otherAdmins) {
-          await bot.telegram.sendMessage(admin.id, startupMessage, {
-            parse_mode: 'HTML',
-          }).catch((err) => {
-            logger.warn({ adminId: admin.id, error: err.message }, 'Failed to send startup message');
-          });
+          await bot.telegram
+            .sendMessage(admin.id, startupMessage, {
+              parse_mode: 'HTML',
+            })
+            .catch((err) => {
+              logger.warn(
+                { adminId: admin.id, error: err.message },
+                'Failed to send startup message'
+              );
+            });
         }
 
         logger.info({ adminCount: allAdmins.length }, 'Startup notifications sent');

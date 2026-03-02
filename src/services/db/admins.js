@@ -131,15 +131,15 @@ class AdminService {
   getAllAdminIds() {
     const data = this._store.getData();
     const result = [];
-    
+
     if (data.super_admin !== null) {
       result.push({ id: data.super_admin, isSuperAdmin: true });
     }
-    
+
     for (const adminId of data.admins) {
       result.push({ id: adminId, isSuperAdmin: false });
     }
-    
+
     return result;
   }
 

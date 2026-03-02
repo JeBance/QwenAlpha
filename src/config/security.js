@@ -54,25 +54,25 @@ const DANGEROUS_PATTERNS = [
   /spawn\s*\(/i,
   /exec\s*\(/i,
   /child_process/i,
-  
+
   // Доступ к файлам сервера
   /fs\.readFile/i,
   /fs\.writeFile/i,
   /fs\.unlink/i,
   /readFileSync/i,
   /writeFileSync/i,
-  
+
   // Пути сервера
   /\/etc\//i,
   /\/proc\//i,
   /\/sys\//i,
   /\/root\//i,
-  
+
   // Переменные окружения сервера
   /process\.env/i,
   /getenv\(/i,
   /os\.homedir\(\)/i,
-  
+
   // Секреты сервера
   /BOT_TOKEN\s*=\s*/i,
   /API_KEY\s*=\s*/i,
@@ -91,13 +91,13 @@ const SENSITIVE_PATTERNS = [
   { pattern: /\/etc\/[^\s]+/g, replacement: '[PATH_REDACTED]' },
   { pattern: /\/var\/[^\s]+/g, replacement: '[PATH_REDACTED]' },
   { pattern: /\/tmp\/[^\s]+/g, replacement: '[PATH_REDACTED]' },
-  
+
   // Токены и ключи
   { pattern: /(?:bot_?)?token\s*[:=]\s*[a-zA-Z0-9:_-]{20,}/gi, replacement: '[TOKEN_REDACTED]' },
   { pattern: /api_?key\s*[:=]\s*[a-zA-Z0-9:_-]{20,}/gi, replacement: '[KEY_REDACTED]' },
   { pattern: /secret\s*[:=]\s*[a-zA-Z0-9:_-]{10,}/gi, replacement: '[SECRET_REDACTED]' },
   { pattern: /password\s*[:=]\s*[^\s]+/gi, replacement: '[PASSWORD_REDACTED]' },
-  
+
   // Переменные окружения
   { pattern: /process\.env\.[A-Z_]+/g, replacement: '[ENV_REDACTED]' },
 ];

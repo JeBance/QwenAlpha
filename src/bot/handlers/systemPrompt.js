@@ -12,8 +12,7 @@ async function setSystemPromptHandler(ctx) {
   // Проверка на супер-админа
   if (!ctx.state.isSuperAdmin) {
     await ctx.reply(
-      '⛔ **Доступ запрещён**\n\n' +
-        'Только супер-администратор может изменять системный промпт.',
+      '⛔ **Доступ запрещён**\n\n' + 'Только супер-администратор может изменять системный промпт.',
       { parse_mode: 'Markdown' }
     );
     return;
@@ -47,9 +46,7 @@ async function setSystemPromptHandler(ctx) {
     );
   } else {
     await ctx.reply(
-      '❌ **Ошибка**\n\n' +
-        'Не удалось сохранить системный промпт.\n' +
-        'Проверьте логи бота.',
+      '❌ **Ошибка**\n\n' + 'Не удалось сохранить системный промпт.\n' + 'Проверьте логи бота.',
       { parse_mode: 'Markdown' }
     );
   }
@@ -86,17 +83,22 @@ async function getSystemPromptHandler(ctx) {
     });
   } else {
     // Отправляем частями
-    await ctx.reply(header + 'Промпт слишком длинный для отображения.\n\n' +
-      'Длина: ' + currentPrompt.length + ' символов.', {
-      parse_mode: 'Markdown',
-    });
+    await ctx.reply(
+      header +
+        'Промпт слишком длинный для отображения.\n\n' +
+        'Длина: ' +
+        currentPrompt.length +
+        ' символов.',
+      {
+        parse_mode: 'Markdown',
+      }
+    );
   }
 
   // Если есть кастомный промпт, показываем кнопку сброса
   if (isCustom) {
     await ctx.reply(
-      'ℹ️ Для сброса к промпту по умолчанию используйте:\n' +
-        '`/resetSystemPrompt`',
+      'ℹ️ Для сброса к промпту по умолчанию используйте:\n' + '`/resetSystemPrompt`',
       { parse_mode: 'Markdown' }
     );
   }
@@ -110,21 +112,16 @@ async function getSystemPromptHandler(ctx) {
 async function resetSystemPromptHandler(ctx) {
   // Проверка на супер-админа
   if (!ctx.state.isSuperAdmin) {
-    await ctx.reply(
-      '⛔ **Доступ запрещён**',
-      { parse_mode: 'Markdown' }
-    );
+    await ctx.reply('⛔ **Доступ запрещён**', { parse_mode: 'Markdown' });
     return;
   }
 
   const success = systemPromptService.reset();
 
   if (success) {
-    await ctx.reply(
-      '✅ **Системный промпт сброшен**\n\n' +
-        'Бот использует промпт по умолчанию.',
-      { parse_mode: 'Markdown' }
-    );
+    await ctx.reply('✅ **Системный промпт сброшен**\n\n' + 'Бот использует промпт по умолчанию.', {
+      parse_mode: 'Markdown',
+    });
   }
 }
 

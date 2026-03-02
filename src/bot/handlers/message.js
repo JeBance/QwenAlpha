@@ -117,7 +117,7 @@ async function messageHandler(ctx) {
     for (let i = 0; i < chunks.length; i++) {
       // Предварительная обработка Markdown от Qwen
       let markdownText = preprocessMarkdown(chunks[i]);
-      
+
       // Qwen отправляет готовый Markdown — отправляем как есть
       await ctx.reply(markdownText, {
         parse_mode: 'Markdown',
@@ -179,17 +179,17 @@ async function messageHandler(ctx) {
  */
 function preprocessMarkdown(text) {
   let processed = text;
-  
+
   // Заголовки → жирный текст с emoji
   processed = processed.replace(/^#####\s+(.+)$/gm, '**📌 $1**');
   processed = processed.replace(/^####\s+(.+)$/gm, '**📌 $1**');
   processed = processed.replace(/^###\s+(.+)$/gm, '**🔹 $1**');
   processed = processed.replace(/^##\s+(.+)$/gm, '**🔸 $1**');
   processed = processed.replace(/^#\s+(.+)$/gm, '**🔸 $1**');
-  
+
   // Цитаты > текст → обычный текст (без >)
   processed = processed.replace(/^>\s*/gm, '');
-  
+
   return processed;
 }
 
@@ -222,30 +222,30 @@ function splitMessage(text, maxLength) {
     const beforeSplit = remaining.substring(0, splitIndex);
     const openPre = beforeSplit.split('<pre>').length - 1;
     const closePre = beforeSplit.split('</pre>').length - 1;
-    
+
     // Если есть незакрытый <pre> — обрабатываем блок кода
     if (openPre > closePre) {
       // Нашли последнее открытие <pre> до splitIndex
       const lastOpenPre = beforeSplit.lastIndexOf('<pre>');
       const codeStart = lastOpenPre + 5; // длина '<pre>'
-      
+
       // Ищем конец блока </pre>
       const closeTagIndex = remaining.indexOf('</pre>', splitIndex);
-      
+
       if (closeTagIndex !== -1) {
         // Полный блок кода от lastOpenPre до closeTagIndex+6
         const fullCodeBlock = remaining.substring(lastOpenPre, closeTagIndex + 6);
-        
+
         // Если блок кода помещается до splitIndex — оставляем как есть
         if (closeTagIndex + 6 <= splitIndex) {
           // Блок целиком в этом чанке, ничего не делаем
-        } 
+        }
         // Если блок кода слишком длинный (> maxLength) — разбиваем его
         else if (fullCodeBlock.length > maxLength) {
           // Находим последнюю полную строку кода перед maxLength
           const codeContent = remaining.substring(codeStart, splitIndex);
           const lastNewline = codeContent.lastIndexOf('\n');
-          
+
           if (lastNewline > 0) {
             // Разбиваем по последней строке
             splitIndex = codeStart + lastNewline;
@@ -268,7 +268,7 @@ function splitMessage(text, maxLength) {
         // Проверяем, не слишком ли длинный блок
         const codeToMax = remaining.substring(codeStart, maxLength);
         const lastNewlineInCode = codeToMax.lastIndexOf('\n');
-        
+
         if (lastNewlineInCode > 0) {
           splitIndex = codeStart + lastNewlineInCode;
         } else {
@@ -278,18 +278,18 @@ function splitMessage(text, maxLength) {
     }
 
     let chunk = remaining.substring(0, splitIndex);
-    
+
     // Проверяем, разорвали ли мы блок кода
     const chunkOpenPre = chunk.split('<pre>').length - 1;
     const chunkClosePre = chunk.split('</pre>').length - 1;
-    
+
     // Если блок кода разорван — закрываем его в конце чанка
     if (chunkOpenPre > chunkClosePre) {
       chunk += '</code></pre>';
     }
-    
+
     chunks.push(chunk);
-    
+
     // Если блок кода был разорван — открываем его в начале следующего
     if (chunkOpenPre > chunkClosePre) {
       remaining = '<pre><code>' + remaining.substring(splitIndex).trim();

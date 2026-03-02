@@ -9,7 +9,9 @@ async function instructionsHandler(ctx) {
   const instructionsText = `
 📖 <b>Qwen Alpha — Инструкции по настройке</b>
 
-${isSuperAdmin ? `👑 <b>Для супер-администратора:</b>
+${
+  isSuperAdmin
+    ? `👑 <b>Для супер-администратора:</b>
 
 <b>1. Настройка системного промпта</b>
 
@@ -40,7 +42,9 @@ ${isSuperAdmin ? `👑 <b>Для супер-администратора:</b>
 /admin ban &lt;user_id&gt; — Забанить пользователя
 /admin unban &lt;user_id&gt; — Разбанить пользователя
 
-` : ''}<b>📱 Для всех пользователей:</b>
+`
+    : ''
+}<b>📱 Для всех пользователей:</b>
 
 <b>1. Начало работы:</b>
 /start — Запуск бота и приветствие

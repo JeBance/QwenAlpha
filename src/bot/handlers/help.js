@@ -28,7 +28,9 @@ async function helpHandler(ctx) {
 2. Продолжайте ответами на сообщения — я помню контекст
 3. Каждая тема — отдельное дерево сообщений
 
-${isAdmin ? `<b>Админ команды:</b>
+${
+  isAdmin
+    ? `<b>Админ команды:</b>
 /admin — Панель администратора
 /setSystemPrompt &lt;промт&gt; — Установить системный промпт
 /getSystemPrompt — Просмотр текущего промпта
@@ -38,7 +40,9 @@ ${isAdmin ? `<b>Админ команды:</b>
 <b>Пример:</b>
 /setSystemPrompt Ты — консультант магазина электроники. Отвечай кратко...
 
-` : ''}🔗 <b>Репозиторий:</b> https://github.com/JeBance/QwenAlpha
+`
+    : ''
+}🔗 <b>Репозиторий:</b> https://github.com/JeBance/QwenAlpha
 📝 <b>Документация:</b> https://github.com/JeBance/QwenAlpha#readme
 
 <b>Технологии:</b>
