@@ -127,6 +127,7 @@ class QwenService {
         const child = spawn('qwen', args, {
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env },
+          shell: true,
         });
 
         let stdout = '';
