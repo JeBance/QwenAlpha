@@ -94,19 +94,19 @@ class QwenService {
     );
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
-    // Запускаем Qwen через spawn с передачей stdin из файла
+    // Запускаем Qwen через execSync с правильной командой
     const args = ['-o', 'json'];
     if (contextMessages.length === 0) {
-      args.splice(1, 0, '-p', 'Проанализируй код и дай рекомендации');
+      args.unshift('-p', 'Проанализируй код и дай рекомендации');
     }
 
     logger.debug(
-      { codeLength: code.length, contextLength: contextMessages.length, tempFile },
+      { codeLength: code.length, contextLength: contextMessages.length, tempFile, args },
       'Running Qwen analysis'
     );
 
     try {
-      // Используем execSync с cat для передачи файла
+      // Формируем команду: cat file | qwen -p "..." -o json
       const command = `cat '${tempFile}' | /usr/local/bin/qwen ${args.join(' ')}`;
       
       const stdout = execSync(command, {
