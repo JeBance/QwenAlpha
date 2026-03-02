@@ -142,6 +142,7 @@ class QwenService {
 
         child.stderr.on('data', (data) => {
           stderr += data.toString();
+          logger.debug({ stderr: data.toString().trim() }, 'Qwen stderr');
         });
 
         child.on('close', (code) => {
