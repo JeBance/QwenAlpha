@@ -107,16 +107,25 @@ class QwenService {
 
     // Получение системного промпта
     const { systemPromptService } = require('./db/systemPrompt');
-    const systemPrompt = systemPromptService.get();
+    let systemPrompt = systemPromptService.get();
 
     // Проверка, супер-админ ли пользователь
     const isAdmin = userId ? require('./db/admins').isSuperAdmin(userId) : false;
+
+    // Добавляем информацию о правах пользователя в системный промпт
+    if (isAdmin) {
+      systemPrompt += '\n\n⚠️ **ВАЖНО:** Текущий пользователь — СУПЕР-АДМИН (Telegram User ID: ' + userId + ').\n' +
+        'Он имеет полный доступ ко всем функциям. Вы можете предоставлять ему расширенную информацию.';
+    } else {
+      systemPrompt += '\n\n⚠️ **ВАЖНО:** Текущий пользователь — ОБЫЧНЫЙ ПОЛЬЗОВАТЕЛЬ (Telegram User ID: ' + userId + ').\n' +
+        'Не раскрывай ему чувствительную информацию (пути, токены, команды shell).';
+    }
 
     // Формирование промпта с контекстом
     let fullPrompt = '';
 
     // Добавляем системный промпт в начало
-    fullPrompt = `${systemPrompt}\n\n`;
+    fullPrompt = systemPrompt + '\n\n';
 
     if (contextMessages && contextMessages.length > 0) {
       // Добавляем контекст диалога
