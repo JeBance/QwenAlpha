@@ -135,6 +135,11 @@ class QwenService {
         // Читаем файл и передаём в stdin
         const fileStream = fs.createReadStream(tempFile);
         fileStream.pipe(child.stdin);
+        
+        // Закрываем stdin после записи чтобы Qwen знал что ввод закончен
+        fileStream.on('end', () => {
+          child.stdin.end();
+        });
 
         child.stdout.on('data', (data) => {
           stdout += data.toString();
