@@ -13,34 +13,35 @@ async function messageHandler(ctx) {
   const chatId = ctx.state.chatId;
   const isPrivate = ctx.state.isPrivate;
   const text = ctx.message?.text;
-  
+
   if (!text) {
     return;
   }
-  
+
   // Проверка на команду /qwen в группах
   const isQwenCommand = text.startsWith('/qwen') || text.startsWith('/qwen@');
-  const isBotMention = text.includes('@QwenAlphaRobot') || text.includes(`@${ctx.botInfo?.username}`);
+  const isBotMention =
+    text.includes('@QwenAlphaRobot') || text.includes(`@${ctx.botInfo?.username}`);
   const isReplyToBot = ctx.message?.reply_to_message?.from?.is_bot;
-  
+
   // В личных чатах обрабатываем все сообщения
   // В группах только /qwen, упоминания бота, или reply на бота
   if (!isPrivate && !isQwenCommand && !isBotMention && !isReplyToBot) {
     return;
   }
-  
+
   // Очистка команды из текста
   let prompt = text;
   if (isQwenCommand) {
     prompt = text.replace(/^\/qwen(@\w+)?\s*/, '').trim();
   }
-  
+
   // Если пусто после очистки команды
   if (!prompt && isQwenCommand) {
     await ctx.reply('❌ Пожалуйста, укажите запрос после /qwen');
     return;
   }
-  
+
   // Загрузка индикатора
   let loadingMsgId = null;
   if (isPrivate) {
@@ -66,8 +67,8 @@ async function messageHandler(ctx) {
         const allMessages = Object.values(session.message_tree)
           .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
           .slice(-10); // Последние 10 сообщений
-        
-        contextMessages = allMessages.map(msg => ({
+
+        contextMessages = allMessages.map((msg) => ({
           role: msg.user_id === 'bot' ? 'assistant' : 'user',
           content: msg.text || '',
         }));
@@ -115,13 +116,13 @@ async function messageHandler(ctx) {
     for (let i = 0; i < chunks.length; i++) {
       // Используем Markdown только для коротких ответов без JSON
       const useMarkdown = chunks.length === 1 && !responseText.startsWith('{');
-      
+
       await ctx.reply(chunks[i], {
         parse_mode: useMarkdown ? 'Markdown' : undefined,
         reply_parameters: { message_id: ctx.message.message_id },
       });
     }
-    
+
     // Добавление сообщений в сессию
     if (session) {
       // Добавляем сообщение пользователя
@@ -146,13 +147,12 @@ async function messageHandler(ctx) {
         parent_id: ctx.message.message_id,
       });
     }
-    
+
     // Обновление статистики
     statsService.incrementRequest();
     userService.incrementRequest(userId);
-    
+
     logger.info({ userId, chatId, duration, isPrivate }, 'Message processed');
-    
   } catch (error) {
     logger.error({ userId, chatId, error }, 'Message processing failed');
 
@@ -160,7 +160,7 @@ async function messageHandler(ctx) {
     if (loadingMsgId) {
       await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId).catch(() => {});
     }
-    
+
     await ctx.reply('❌ Ошибка при обработке запроса. Попробуйте позже.', {
       reply_parameters: { message_id: ctx.message.message_id },
     });
@@ -177,13 +177,13 @@ async function messageHandler(ctx) {
  */
 function splitMessage(text, maxLength) {
   const chunks = [];
-  
+
   if (text.length <= maxLength) {
     return [text];
   }
-  
+
   let remaining = text;
-  
+
   while (remaining.length > maxLength) {
     // Ищем ближайший перенос строки или пробел
     let splitIndex = remaining.lastIndexOf('\n', maxLength);
@@ -193,15 +193,15 @@ function splitMessage(text, maxLength) {
     if (splitIndex === -1) {
       splitIndex = maxLength;
     }
-    
+
     chunks.push(remaining.substring(0, splitIndex));
     remaining = remaining.substring(splitIndex).trim();
   }
-  
+
   if (remaining.length > 0) {
     chunks.push(remaining);
   }
-  
+
   return chunks;
 }
 

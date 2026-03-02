@@ -10,29 +10,30 @@ const { logger } = require('../../utils/logger');
 async function sessionMiddleware(ctx, next) {
   const userId = ctx.from?.id;
   const chatId = ctx.chat?.id;
-  
+
   if (!userId || !chatId) {
     return next();
   }
-  
+
   // Очистка просроченных сессий (раз в час)
   const lastCleanup = ctx.botInfo?.last_cleanup || 0;
   const now = Date.now();
-  
-  if (now - lastCleanup > 3600000) { // 1 час
+
+  if (now - lastCleanup > 3600000) {
+    // 1 час
     const removed = sessionService.cleanupExpired();
     logger.info({ removed }, 'Expired sessions cleaned up');
     ctx.botInfo = { ...ctx.botInfo, last_cleanup: now };
   }
-  
+
   // Поиск активной сессии для текущего чата
   const isPrivate = chatId > 0 || userId === chatId;
-  
+
   if (isPrivate) {
     // Личный чат - одна сессия на пользователя
     const sessionKey = `user:${userId}`;
     const session = sessionService.getByKey(sessionKey);
-    
+
     if (session && session.status === 'active') {
       ctx.state.session = session;
       ctx.state.sessionKey = sessionKey;
@@ -40,8 +41,8 @@ async function sessionMiddleware(ctx, next) {
   } else {
     // Групповой чат - всегда используем последнюю активную сессию
     const chatSessions = sessionService.getChatSessions(chatId);
-    let activeSession = chatSessions.find(s => s.status === 'active');
-    
+    let activeSession = chatSessions.find((s) => s.status === 'active');
+
     // Если сессии нет - создаём новую
     if (!activeSession) {
       activeSession = sessionService.create({
@@ -52,12 +53,12 @@ async function sessionMiddleware(ctx, next) {
         chatTitle: ctx.chat.title,
       });
     }
-    
+
     if (activeSession) {
       ctx.state.session = activeSession;
       ctx.state.sessionKey = `chat:${chatId}`;
     }
-    
+
     // Если есть reply, проверяем принадлежит ли оно этой сессии
     const replyToMessageId = ctx.message?.reply_to_message?.message_id;
     if (replyToMessageId && activeSession) {
@@ -67,11 +68,11 @@ async function sessionMiddleware(ctx, next) {
       }
     }
   }
-  
+
   ctx.state.isPrivate = isPrivate;
   ctx.state.userId = userId;
   ctx.state.chatId = chatId;
-  
+
   return next();
 }
 

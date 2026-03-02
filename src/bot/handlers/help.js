@@ -5,7 +5,7 @@
  */
 async function helpHandler(ctx) {
   const isAdmin = ctx.state.isAdmin;
-  
+
   const helpText = `
 📖 **Qwen Alpha — Команды бота**
 
@@ -36,7 +36,7 @@ ${isAdmin ? '**Админ команды:**\n/admin — Панель админ�
 • Telegraf (Node.js)
 • JSON хранилище (~/.qwen-alpha/)
   `.trim();
-  
+
   await ctx.reply(helpText, { parse_mode: 'Markdown' });
 }
 

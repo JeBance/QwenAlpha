@@ -14,7 +14,7 @@ async function startBot(options = {}) {
   try {
     // Инициализация директорий
     initDirectories();
-    
+
     // Применение опций из CLI
     if (options.token) {
       config.bot.token = options.token;
@@ -25,43 +25,46 @@ async function startBot(options = {}) {
     if (options.allowedUsers) {
       config.bot.allowedUsers = options.allowedUsers;
     }
-    
+
     // Валидация токена
     if (!config.bot.token) {
       throw new Error(
         'Telegram Bot API токен не указан. ' +
-        'Используйте --token <TOKEN> или установите переменную окружения BOT_TOKEN'
+          'Используйте --token <TOKEN> или установите переменную окружения BOT_TOKEN'
       );
     }
-    
-    logger.info({ 
-      logLevel: config.bot.logLevel,
-      allowedUsers: config.bot.allowedUsers.length > 0 ? config.bot.allowedUsers : 'all',
-    }, 'Starting Qwen Alpha Bot');
-    
+
+    logger.info(
+      {
+        logLevel: config.bot.logLevel,
+        allowedUsers: config.bot.allowedUsers.length > 0 ? config.bot.allowedUsers : 'all',
+      },
+      'Starting Qwen Alpha Bot'
+    );
+
     // Инициализация и запуск бота
     const bot = await initBot(config.bot.token, config);
-    
+
     // Запуск в режиме polling
     await bot.launch();
-    
+
     logger.info('Bot launched successfully');
-    
+
     // Обработчики graceful shutdown
     const shutdown = async (signal) => {
       logger.info({ signal }, 'Graceful shutdown initiated');
       bot.stop(signal);
-      
+
       // Закрываем соединение с Telegram
       await bot.telegram.getMe().catch(() => {});
-      
+
       logger.info('Bot stopped');
       process.exit(0);
     };
-    
+
     process.once('SIGINT', () => shutdown('SIGINT'));
     process.once('SIGTERM', () => shutdown('SIGTERM'));
-    
+
     return bot;
   } catch (error) {
     logger.error({ error }, 'Failed to start bot');

@@ -46,7 +46,7 @@ function getLogFilePath(date = new Date()) {
  */
 function initDirectories() {
   const fs = require('fs');
-  
+
   for (const dir of Object.values(DIRECTORIES)) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });

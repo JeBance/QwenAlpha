@@ -16,7 +16,7 @@ module.exports = {
       ? process.env.ALLOWED_USERS.split(',').map(Number).filter(Boolean)
       : [],
   },
-  
+
   /** Настройки Qwen Code */
   qwen: {
     /** Таймаут выполнения команды (мс) */
@@ -26,7 +26,7 @@ module.exports = {
     /** Максимальный размер файла для анализа (байты) */
     maxFileSize: 2 * 1024 * 1024, // 2MB
   },
-  
+
   /** Rate limiting */
   rateLimit: {
     /** Окно времени (мс) */
@@ -34,7 +34,7 @@ module.exports = {
     /** Максимум запросов в окно */
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX, 10) || 10,
   },
-  
+
   /** Сессии */
   session: {
     /** Срок жизни сессии (часы) */
@@ -42,13 +42,13 @@ module.exports = {
     /** Максимум сообщений в сессии */
     maxMessages: 1000,
   },
-  
+
   /** Логирование */
   logging: {
     /** Ротация логов (дни) */
     rotationDays: 1,
   },
-  
+
   /** Пути */
   paths: {
     /** Домашняя директория ~/.qwen-alpha */

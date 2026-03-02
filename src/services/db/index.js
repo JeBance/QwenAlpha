@@ -18,7 +18,7 @@ class JsonStore {
     this.data = null;
     this.isInitialized = false;
   }
-  
+
   /**
    * Инициализация хранилища
    * Загружает данные из файла или создаёт новый
@@ -41,7 +41,7 @@ class JsonStore {
       this.isInitialized = true;
     }
   }
-  
+
   /**
    * Сохранение данных в файл
    */
@@ -57,7 +57,7 @@ class JsonStore {
       throw error;
     }
   }
-  
+
   /**
    * Получение данных
    * @returns {Object} Копия данных хранилища
@@ -68,7 +68,7 @@ class JsonStore {
     }
     return JSON.parse(JSON.stringify(this.data));
   }
-  
+
   /**
    * Установка данных
    * @param {Object} newData - Новые данные
@@ -80,7 +80,7 @@ class JsonStore {
     this.data = JSON.parse(JSON.stringify(newData));
     this.save();
   }
-  
+
   /**
    * Обновление данных (merge)
    * @param {Object} updates - Данные для обновления
@@ -103,7 +103,7 @@ class StoreManager {
     this.stores = {};
     this.isInitialized = false;
   }
-  
+
   /**
    * Инициализация всех хранилищ
    */
@@ -111,9 +111,9 @@ class StoreManager {
     if (this.isInitialized) {
       return;
     }
-    
+
     initDirectories();
-    
+
     // Инициализация хранилищ
     this.stores.users = new JsonStore(DB_FILES.users, {});
     this.stores.sessions = new JsonStore(DB_FILES.sessions, {});
@@ -135,14 +135,14 @@ class StoreManager {
       log_rotation_days: 1,
       group_mode: 'mention',
     });
-    
+
     // Инициализация каждого хранилища
-    Object.values(this.stores).forEach(store => store.init());
-    
+    Object.values(this.stores).forEach((store) => store.init());
+
     this.isInitialized = true;
     logger.info('All stores initialized');
   }
-  
+
   /**
    * Получение хранилища
    * @param {string} name - Имя хранилища
@@ -154,12 +154,12 @@ class StoreManager {
     }
     return this.stores[name];
   }
-  
+
   /**
    * Сохранение всех хранилищ
    */
   saveAll() {
-    Object.values(this.stores).forEach(store => {
+    Object.values(this.stores).forEach((store) => {
       if (store.isInitialized) {
         store.save();
       }

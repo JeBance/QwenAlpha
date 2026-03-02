@@ -12,7 +12,7 @@ class UserService {
   get _store() {
     return storeManager.get('users');
   }
-  
+
   /**
    * Получение пользователя по ID
    * @param {number} userId - Telegram user ID
@@ -22,7 +22,7 @@ class UserService {
     const data = this._store.getData();
     return data[userId] || null;
   }
-  
+
   /**
    * Создание или обновление пользователя
    * @param {Object} userData - Данные пользователя
@@ -35,9 +35,9 @@ class UserService {
   upsert(userData) {
     const data = this._store.getData();
     const now = new Date().toISOString();
-    
+
     const existingUser = data[userData.id];
-    
+
     data[userData.id] = {
       id: userData.id,
       username: userData.username || null,
@@ -64,13 +64,13 @@ class UserService {
       },
       is_banned: existingUser?.is_banned || false,
     };
-    
+
     this._store.setData(data);
     logger.debug({ userId: userData.id }, 'User upserted');
-    
+
     return data[userData.id];
   }
-  
+
   /**
    * Обновление настроек пользователя
    * @param {number} userId - Telegram user ID
@@ -79,22 +79,22 @@ class UserService {
    */
   updateSettings(userId, settings) {
     const data = this._store.getData();
-    
+
     if (!data[userId]) {
       throw new Error(`User ${userId} not found`);
     }
-    
+
     data[userId].settings = {
       ...data[userId].settings,
       ...settings,
     };
-    
+
     this._store.setData(data);
     logger.debug({ userId, settings }, 'User settings updated');
-    
+
     return data[userId];
   }
-  
+
   /**
    * Бан пользователя
    * @param {number} userId - Telegram user ID
@@ -102,18 +102,18 @@ class UserService {
    */
   ban(userId) {
     const data = this._store.getData();
-    
+
     if (!data[userId]) {
       return false;
     }
-    
+
     data[userId].is_banned = true;
     this._store.setData(data);
     logger.warn({ userId }, 'User banned');
-    
+
     return true;
   }
-  
+
   /**
    * Разбан пользователя
    * @param {number} userId - Telegram user ID
@@ -121,18 +121,18 @@ class UserService {
    */
   unban(userId) {
     const data = this._store.getData();
-    
+
     if (!data[userId]) {
       return false;
     }
-    
+
     data[userId].is_banned = false;
     this._store.setData(data);
     logger.info({ userId }, 'User unbanned');
-    
+
     return true;
   }
-  
+
   /**
    * Обновление статистики пользователя
    * @param {number} userId - Telegram user ID
@@ -141,20 +141,20 @@ class UserService {
    */
   updateStats(userId, updates) {
     const data = this._store.getData();
-    
+
     if (!data[userId]) {
       throw new Error(`User ${userId} not found`);
     }
-    
+
     data[userId].stats = {
       ...data[userId].stats,
       ...updates,
     };
-    
+
     this._store.setData(data);
     return data[userId];
   }
-  
+
   /**
    * Increment запроса пользователя
    * @param {number} userId - Telegram user ID
@@ -162,27 +162,27 @@ class UserService {
   incrementRequest(userId) {
     const data = this._store.getData();
     const today = new Date().toISOString().split('T')[0];
-    
+
     if (!data[userId]) {
       return;
     }
-    
+
     // Сброс счётчика если новый день
     const lastRequest = data[userId].rate_limits?.last_request;
     if (lastRequest && lastRequest.split('T')[0] !== today) {
       data[userId].rate_limits.requests_today = 0;
     }
-    
+
     data[userId].rate_limits = {
       requests_today: (data[userId].rate_limits?.requests_today || 0) + 1,
       last_request: new Date().toISOString(),
     };
-    
+
     data[userId].stats.total_requests = (data[userId].stats?.total_requests || 0) + 1;
-    
+
     this._store.setData(data);
   }
-  
+
   /**
    * Получение всех пользователей
    * @returns {Array} Массив пользователей
@@ -191,7 +191,7 @@ class UserService {
     const data = this._store.getData();
     return Object.values(data);
   }
-  
+
   /**
    * Удаление пользователя
    * @param {number} userId - Telegram user ID
@@ -199,15 +199,15 @@ class UserService {
    */
   delete(userId) {
     const data = this._store.getData();
-    
+
     if (!data[userId]) {
       return false;
     }
-    
+
     delete data[userId];
     this._store.setData(data);
     logger.info({ userId }, 'User deleted');
-    
+
     return true;
   }
 }

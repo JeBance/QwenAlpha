@@ -11,7 +11,7 @@ async function statsHandler(ctx) {
   const userId = ctx.state.userId;
   const chatId = ctx.state.chatId;
   const isPrivate = ctx.state.isPrivate;
-  
+
   if (isPrivate) {
     // Личная статистика
     const user = userService.getById(userId);
@@ -40,15 +40,15 @@ async function statsHandler(ctx) {
 • Запросов сегодня: ${globalStats.requests_today}
 • Среднее время ответа: ${globalStats.avg_response_time_ms}мс
     `.trim();
-    
+
     await ctx.reply(statsText, { parse_mode: 'Markdown' });
   } else {
     // Статистика чата
     const sessions = sessionService.getChatSessions(chatId);
-    const activeSessions = sessions.filter(s => s.status === 'active');
+    const activeSessions = sessions.filter((s) => s.status === 'active');
     const totalMessages = sessions.reduce((sum, s) => sum + (s.message_count || 0), 0);
-    const participants = new Set(sessions.flatMap(s => s.participants || []));
-    
+    const participants = new Set(sessions.flatMap((s) => s.participants || []));
+
     const chatStatsText = `
 📊 **Статистика чата**
 
@@ -61,12 +61,17 @@ async function statsHandler(ctx) {
 • Участников: ${participants.size}
 
 **Сессии:**
-${activeSessions.slice(0, 5).map(s => {
+${
+  activeSessions
+    .slice(0, 5)
+    .map((s) => {
       const timeLeft = Math.max(0, Math.floor((new Date(s.expires_at) - new Date()) / 3600000));
       return `• Тема от ${s.root_user_id} (осталось ${timeLeft}ч)`;
-    }).join('\n') || 'Нет активных сессий'}
+    })
+    .join('\n') || 'Нет активных сессий'
+}
     `.trim();
-    
+
     await ctx.reply(chatStatsText, { parse_mode: 'Markdown' });
   }
 }

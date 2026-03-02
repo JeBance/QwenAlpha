@@ -37,7 +37,7 @@ class QwenService {
     // Экранирование специальных символов
     return str.replace(/'/g, "'\\''").replace(/"/g, '\\"').replace(/`/g, '\\`');
   }
-  
+
   /**
    * Проверка доступности Qwen Code
    * @returns {Promise<boolean>} true если Qwen доступен
@@ -54,7 +54,7 @@ class QwenService {
       return false;
     }
   }
-  
+
   /**
    * Анализ кода через Qwen Code headless
    * @param {string} code - Код для анализа
@@ -81,7 +81,7 @@ class QwenService {
     if (contextMessages && contextMessages.length > 0) {
       // Добавляем контекст диалога
       const contextText = contextMessages
-        .map(msg => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
+        .map((msg) => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
         .join('\n');
 
       // Явно указываем что это продолжение диалога
@@ -89,16 +89,23 @@ class QwenService {
     }
 
     // Создаём временный файл с промптом
-    const tempFile = path.join(os.tmpdir(), `qwen-alpha-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.txt`);
+    const tempFile = path.join(
+      os.tmpdir(),
+      `qwen-alpha-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.txt`
+    );
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
     // Команда для Qwen — без системного промпта если есть контекст
     // Перенаправляем stderr в /dev/null чтобы избежать интерактивных подсказок
-    const command = contextMessages.length > 0
-      ? `cat '${tempFile}' | qwen -o json 2>/dev/null`
-      : `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json 2>/dev/null`;
+    const command =
+      contextMessages.length > 0
+        ? `cat '${tempFile}' | qwen -o json 2>/dev/null`
+        : `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json 2>/dev/null`;
 
-    logger.debug({ codeLength: code.length, contextLength: contextMessages.length, tempFile }, 'Running Qwen analysis');
+    logger.debug(
+      { codeLength: code.length, contextLength: contextMessages.length, tempFile },
+      'Running Qwen analysis'
+    );
 
     try {
       const { stdout } = await execAsync(command, {
@@ -108,7 +115,11 @@ class QwenService {
       });
 
       // Удаляем временный файл
-      try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        /* ignore */
+      }
 
       // Парсинг JSON ответа
       const result = this._parseJsonResponse(stdout);
@@ -117,10 +128,13 @@ class QwenService {
       logger.info({ duration, resultLength: result.length }, 'Qwen analysis completed');
 
       return result;
-
     } catch (error) {
       // Удаляем временный файл при ошибке
-      try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        /* ignore */
+      }
 
       logger.error({ error }, 'Qwen analysis failed');
 
@@ -141,14 +155,10 @@ class QwenService {
         );
       }
 
-      throw new QwenError(
-        `Ошибка Qwen Code: ${error.message}`,
-        error,
-        'QWEN_ERROR'
-      );
+      throw new QwenError(`Ошибка Qwen Code: ${error.message}`, error, 'QWEN_ERROR');
     }
   }
-  
+
   /**
    * Парсинг JSON ответа от Qwen
    * @param {string} stdout - JSON строка от Qwen
@@ -171,8 +181,15 @@ class QwenService {
       for (const msg of messages) {
         // Сначала проверяем result сообщение (оно содержит финальный ответ)
         if (msg.type === 'result') {
-          logger.debug({ resultType: typeof msg.result, resultLength: msg.result?.length, result: msg.result?.substring?.(0, 100) }, 'Checking result message');
-          
+          logger.debug(
+            {
+              resultType: typeof msg.result,
+              resultLength: msg.result?.length,
+              result: msg.result?.substring?.(0, 100),
+            },
+            'Checking result message'
+          );
+
           // result должен быть строкой
           if (typeof msg.result === 'string') {
             textContents.push(msg.result);
@@ -202,7 +219,7 @@ class QwenService {
           }
         }
       }
-      
+
       // Если нашли текст — возвращаем
       if (textContents.length > 0) {
         const result = textContents.join('\n\n');
@@ -210,16 +227,23 @@ class QwenService {
         return result;
       }
 
-      logger.warn({ hasResult, textContents: textContents.length }, 'No text found in Qwen response');
+      logger.warn(
+        { hasResult, textContents: textContents.length },
+        'No text found in Qwen response'
+      );
 
       // Fallback: если нет текста, пробуем извлечь информацию из tool_use
-      const toolMessages = messages.filter(m => m.type === 'assistant' && m.message?.content?.some(c => c.type === 'tool_use'));
+      const toolMessages = messages.filter(
+        (m) => m.type === 'assistant' && m.message?.content?.some((c) => c.type === 'tool_use')
+      );
       if (toolMessages.length > 0) {
-        const toolInfo = toolMessages.map(m => {
-          const tools = m.message.content.filter(c => c.type === 'tool_use');
-          return tools.map(t => `Использует инструмент: ${t.name}`).join('; ');
-        }).join('. ');
-        
+        const toolInfo = toolMessages
+          .map((m) => {
+            const tools = m.message.content.filter((c) => c.type === 'tool_use');
+            return tools.map((t) => `Использует инструмент: ${t.name}`).join('; ');
+          })
+          .join('. ');
+
         if (toolInfo) {
           return `Qwen анализирует: ${toolInfo}. Пожалуйста, уточните запрос для получения текстового ответа.`;
         }
@@ -227,14 +251,16 @@ class QwenService {
 
       // Fallback: короткое сообщение вместо всего stdout
       return 'Qwen вернул ответ в нестандартном формате. Попробуйте упростить запрос.';
-
     } catch (parseError) {
-      logger.warn({ parseError, stdout: stdout?.substring(0, 500) }, 'Failed to parse Qwen JSON response');
+      logger.warn(
+        { parseError, stdout: stdout?.substring(0, 500) },
+        'Failed to parse Qwen JSON response'
+      );
       // Возвращаем короткое сообщение об ошибке вместо всего stdout
       return 'Qwen вернул ответ в нестандартном формате. Попробуйте упростить запрос.';
     }
   }
-  
+
   /**
    * Генерация кода по описанию
    * @param {string} description - Описание того, что нужно сгенерировать
@@ -245,10 +271,10 @@ class QwenService {
     const prompt = language
       ? `Напиши код на ${language}: ${description}`
       : `Напиши код: ${description}`;
-    
+
     return this.analyzeCode(prompt);
   }
-  
+
   /**
    * Code review кода
    * @param {string} code - Код для ревью
@@ -257,16 +283,16 @@ class QwenService {
    */
   async reviewCode(code, focus = null) {
     let prompt = 'Сделай code review этого кода. Найди баги, уязвимости и предложи улучшения.\n\n';
-    
+
     if (focus) {
       prompt += `Сосредоточься на: ${focus}.\n\n`;
     }
-    
+
     prompt += code;
-    
+
     return this.analyzeCode(prompt);
   }
-  
+
   /**
    * Объяснение кода
    * @param {string} code - Код для объяснения
@@ -276,7 +302,7 @@ class QwenService {
     const prompt = `Объясни подробно, что делает этот код:\n\n${code}`;
     return this.analyzeCode(prompt);
   }
-  
+
   /**
    * Рефакторинг кода
    * @param {string} code - Код для рефакторинга
@@ -285,13 +311,13 @@ class QwenService {
    */
   async refactorCode(code, goal = null) {
     let prompt = 'Рефактори этот код, улучши читаемость и производительность.\n\n';
-    
+
     if (goal) {
       prompt += `Цель: ${goal}.\n\n`;
     }
-    
+
     prompt += code;
-    
+
     return this.analyzeCode(prompt);
   }
 }

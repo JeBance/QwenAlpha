@@ -10,7 +10,7 @@ async function settingsHandler(ctx) {
   const userId = ctx.state.userId;
   const user = userService.getById(userId);
   const globalSettings = storeManager.get('settings').getData();
-  
+
   const settingsText = `
 ⚙️ **Ваши настройки**
 
@@ -31,7 +31,7 @@ async function settingsHandler(ctx) {
 /settings language <ru|en> — сменить язык
 /settings notifications <on|off> — уведомления
   `.trim();
-  
+
   await ctx.reply(settingsText, { parse_mode: 'Markdown' });
 }
 

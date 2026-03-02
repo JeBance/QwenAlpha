@@ -10,12 +10,12 @@ module.exports = {
   },
   rules: {
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    'semi': ['error', 'always'],
-    'quotes': ['warn', 'single'],
+    semi: ['error', 'always'],
+    quotes: ['warn', 'single'],
     'no-console': 'off',
     'no-eval': 'error',
-    'eqeqeq': ['error', 'always'],
-    'curly': ['error', 'all'],
+    eqeqeq: ['error', 'always'],
+    curly: ['error', 'all'],
   },
   ignorePatterns: ['node_modules/', 'logs/', '*.log'],
 };

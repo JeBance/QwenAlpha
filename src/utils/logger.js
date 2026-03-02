@@ -18,31 +18,34 @@ function getLogLevel() {
  */
 function createLogger() {
   const level = getLogLevel();
-  
+
   // Инициализация директорий
   initDirectories();
-  
+
   // Поток для файла логов
   const logFilePath = getLogFilePath();
   let fileStream;
-  
+
   try {
     fileStream = fs.createWriteStream(logFilePath, { flags: 'a' });
   } catch (error) {
     console.error('Failed to create log file stream:', error.message);
     fileStream = process.stdout;
   }
-  
-  return pino({
-    level,
-    formatters: {
-      level: (label) => ({ level: label }),
+
+  return pino(
+    {
+      level,
+      formatters: {
+        level: (label) => ({ level: label }),
+      },
+      timestamp: pino.stdTimeFunctions.isoTime,
     },
-    timestamp: pino.stdTimeFunctions.isoTime,
-  }, pino.multistream([
-    { stream: fileStream, level },
-    { stream: process.stdout, level },
-  ]));
+    pino.multistream([
+      { stream: fileStream, level },
+      { stream: process.stdout, level },
+    ])
+  );
 }
 
 /**
@@ -53,30 +56,30 @@ class ContextLogger {
     this.baseLogger = baseLogger;
     this.defaultContext = defaultContext;
   }
-  
+
   child(context) {
-    return new ContextLogger(
-      this.baseLogger.child(context),
-      { ...this.defaultContext, ...context }
-    );
+    return new ContextLogger(this.baseLogger.child(context), {
+      ...this.defaultContext,
+      ...context,
+    });
   }
-  
+
   debug(msg, context = {}) {
     this.baseLogger.debug({ ...this.defaultContext, ...context }, msg);
   }
-  
+
   info(msg, context = {}) {
     this.baseLogger.info({ ...this.defaultContext, ...context }, msg);
   }
-  
+
   warn(msg, context = {}) {
     this.baseLogger.warn({ ...this.defaultContext, ...context }, msg);
   }
-  
+
   error(msg, context = {}) {
     this.baseLogger.error({ ...this.defaultContext, ...context }, msg);
   }
-  
+
   fatal(msg, context = {}) {
     this.baseLogger.fatal({ ...this.defaultContext, ...context }, msg);
   }
@@ -91,9 +94,9 @@ function setupLogRotation() {
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
-  
+
   const msUntilMidnight = tomorrow.getTime() - now.getTime();
-  
+
   // Планируем ротацию на полночь
   setTimeout(() => {
     logger.info('Rotating log file');

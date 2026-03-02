@@ -11,11 +11,11 @@ const config = require('../../config');
  */
 async function authMiddleware(ctx, next) {
   const userId = ctx.from?.id;
-  
+
   if (!userId) {
     return next();
   }
-  
+
   // Проверка whitelist (если настроен)
   if (config.bot.allowedUsers.length > 0) {
     if (!config.bot.allowedUsers.includes(userId)) {
@@ -24,10 +24,10 @@ async function authMiddleware(ctx, next) {
       return;
     }
   }
-  
+
   // Получение или создание пользователя
   let user = userService.getById(userId);
-  
+
   if (!user) {
     user = userService.upsert({
       id: userId,
@@ -45,7 +45,7 @@ async function authMiddleware(ctx, next) {
       last_name: ctx.from.last_name,
     });
   }
-  
+
   // Проверка бана
   if (user.is_banned) {
     logger.warn({ userId }, 'Banned user attempted access');
@@ -56,7 +56,7 @@ async function authMiddleware(ctx, next) {
   // Проверка блокировки бота (lock mode)
   const settings = storeManager.get('settings');
   const settingsData = settings.getData();
-  
+
   if (settingsData.locked && !adminService.isAdmin(userId)) {
     logger.warn({ userId }, 'User blocked by lock mode');
     await ctx.reply('🔒 Бот временно заблокирован администратором. Попробуйте позже.');
@@ -71,10 +71,10 @@ async function authMiddleware(ctx, next) {
   } else {
     ctx.state.isSuperAdmin = adminService.isSuperAdmin(userId);
   }
-  
+
   ctx.state.isAdmin = adminService.isAdmin(userId);
   ctx.state.user = user;
-  
+
   return next();
 }
 

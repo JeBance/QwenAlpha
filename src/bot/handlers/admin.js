@@ -14,19 +14,19 @@ async function adminHandler(ctx) {
   const userId = ctx.state.userId;
   const args = ctx.message?.text?.split(' ').slice(1) || [];
   const command = args[0]?.toLowerCase();
-  
+
   // Проверка прав администратора
   if (!ctx.state.isAdmin) {
     await ctx.reply('⛔ Доступ запрещён. Требуются права администратора.');
     logger.warn({ userId }, 'Non-admin tried to access /admin');
     return;
   }
-  
+
   // Без подкоманды — показать меню
   if (!command) {
     const admins = adminService.getAllAdmins();
     const globalStats = statsService.getGlobal();
-    
+
     const menuText = `
 🛡 **Панель администратора**
 
@@ -66,11 +66,11 @@ async function adminHandler(ctx) {
 /admin stats — подробная статистика
 /admin broadcast <message> — рассылка всем
     `.trim();
-    
+
     await ctx.reply(menuText, { parse_mode: 'Markdown' });
     return;
   }
-  
+
   // Обработка подкоманд
   switch (command) {
     case 'add': {
@@ -79,7 +79,7 @@ async function adminHandler(ctx) {
         await ctx.reply('❌ Usage: /admin add <user_id>');
         return;
       }
-      
+
       const success = adminService.addAdmin(targetId, userId);
       if (success) {
         await ctx.reply(`✅ Пользователь ${targetId} добавлен в админы.`);
@@ -89,14 +89,14 @@ async function adminHandler(ctx) {
       }
       break;
     }
-    
+
     case 'remove': {
       const targetId = parseInt(args[1], 10);
       if (!targetId || isNaN(targetId)) {
         await ctx.reply('❌ Usage: /admin remove <user_id>');
         return;
       }
-      
+
       const success = adminService.removeAdmin(targetId, userId);
       if (success) {
         await ctx.reply(`✅ Пользователь ${targetId} удалён из админов.`);
@@ -106,14 +106,14 @@ async function adminHandler(ctx) {
       }
       break;
     }
-    
+
     case 'ban': {
       const targetId = parseInt(args[1], 10);
       if (!targetId || isNaN(targetId)) {
         await ctx.reply('❌ Usage: /admin ban <user_id>');
         return;
       }
-      
+
       const success = userService.ban(targetId);
       if (success) {
         await ctx.reply(`✅ Пользователь ${targetId} забанен.`);
@@ -123,7 +123,7 @@ async function adminHandler(ctx) {
       }
       break;
     }
-    
+
     case 'unban': {
       const targetId = parseInt(args[1], 10);
       if (!targetId || isNaN(targetId)) {
@@ -147,8 +147,11 @@ async function adminHandler(ctx) {
       const data = settings.getData();
       data.locked = true;
       settings.setData(data);
-      
-      await ctx.reply('🔒 **Бот заблокирован для всех пользователей кроме админов.**\n\nИспользуйте /admin unlock для разблокировки.', { parse_mode: 'Markdown' });
+
+      await ctx.reply(
+        '🔒 **Бот заблокирован для всех пользователей кроме админов.**\n\nИспользуйте /admin unlock для разблокировки.',
+        { parse_mode: 'Markdown' }
+      );
       logger.info({ userId }, 'Bot locked for all users except admins');
       break;
     }
@@ -159,15 +162,18 @@ async function adminHandler(ctx) {
       const data = settings.getData();
       data.locked = false;
       settings.setData(data);
-      
-      await ctx.reply('🔓 **Бот разблокирован.**\n\nВсе пользователи могут снова использовать бота.', { parse_mode: 'Markdown' });
+
+      await ctx.reply(
+        '🔓 **Бот разблокирован.**\n\nВсе пользователи могут снова использовать бота.',
+        { parse_mode: 'Markdown' }
+      );
       logger.info({ userId }, 'Bot unlocked for all users');
       break;
     }
 
     case 'sessions': {
       const subCommand = args[2];
-      
+
       if (subCommand === 'list') {
         const allSessions = sessionService._store.getData();
         const sessionCount = Object.keys(allSessions).length;
@@ -178,11 +184,11 @@ async function adminHandler(ctx) {
           await ctx.reply('❌ Usage: /admin sessions clear <chat_id>');
           return;
         }
-        
+
         const data = sessionService._store.getData();
         delete data[`chat:${chatId}`];
         sessionService._store.setData(data);
-        
+
         await ctx.reply(`✅ Сессии чата ${chatId} очищены.`);
         logger.info({ userId, chatId }, 'Chat sessions cleared');
       } else {
@@ -190,19 +196,19 @@ async function adminHandler(ctx) {
       }
       break;
     }
-    
+
     case 'set': {
       const key = args[1];
       const value = args[2];
-      
+
       if (!key || value === undefined) {
         await ctx.reply('❌ Usage: /admin set <key> <value>');
         return;
       }
-      
+
       const settings = storeManager.get('settings');
       const data = settings.getData();
-      
+
       // Преобразование значения
       let parsedValue = value;
       if (!isNaN(Number(value))) {
@@ -212,7 +218,7 @@ async function adminHandler(ctx) {
       } else if (value.toLowerCase() === 'false') {
         parsedValue = false;
       }
-      
+
       if (Object.prototype.hasOwnProperty.call(data, key)) {
         data[key] = parsedValue;
         settings.setData(data);
@@ -223,17 +229,17 @@ async function adminHandler(ctx) {
       }
       break;
     }
-    
+
     case 'settings': {
       const settings = storeManager.get('settings').getData();
       const settingsText = Object.entries(settings)
         .map(([key, value]) => `• ${key}: ${value}`)
         .join('\n');
-      
+
       await ctx.reply(`⚙️ **Настройки бота:**\n\n${settingsText}`, { parse_mode: 'Markdown' });
       break;
     }
-    
+
     case 'stats': {
       const periodStats = statsService.getPeriod(7);
       const statsText = `
@@ -244,11 +250,11 @@ async function adminHandler(ctx) {
 **Файлы:** ${periodStats.total_files}
 **Сессии:** ${periodStats.total_sessions}
       `.trim();
-      
+
       await ctx.reply(statsText, { parse_mode: 'Markdown' });
       break;
     }
-    
+
     default:
       await ctx.reply('❌ Неизвестная команда. Используйте /admin для просмотра меню.');
   }

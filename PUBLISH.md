@@ -177,6 +177,7 @@ npm-views qwen-alpha
 ### Перед публикацией проверьте:
 
 1. **Нет ли .env файлов в репозитории**
+
    ```bash
    git ls-files | grep .env
    ```

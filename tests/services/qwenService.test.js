@@ -32,7 +32,7 @@ describe('QwenService', () => {
       assert.strictEqual(qwenService._escapeShell(123), '');
     });
   });
-  
+
   describe('checkAvailability', () => {
     it('должен возвращать false если Qwen не установлен', async () => {
       const result = await qwenService.checkAvailability();
@@ -40,7 +40,7 @@ describe('QwenService', () => {
       assert.strictEqual(typeof result, 'boolean');
     });
   });
-  
+
   describe('_parseJsonResponse', () => {
     it('должен парсить JSON с assistant сообщением', () => {
       const json = JSON.stringify([
@@ -56,11 +56,11 @@ describe('QwenService', () => {
           },
         },
       ]);
-      
+
       const result = qwenService._parseJsonResponse(json);
       assert.strictEqual(result, 'Hello World');
     });
-    
+
     it('должен парсить JSON со строковым content', () => {
       const json = JSON.stringify([
         {
@@ -71,17 +71,17 @@ describe('QwenService', () => {
           },
         },
       ]);
-      
+
       const result = qwenService._parseJsonResponse(json);
       assert.strictEqual(result, 'Hello World');
     });
-    
+
     it('должен возвращать stdout при ошибке парсинга', () => {
       const invalidJson = 'not a json';
       const result = qwenService._parseJsonResponse(invalidJson);
       assert.strictEqual(result, 'not a json');
     });
-    
+
     it('должен парсить result сообщение', () => {
       const json = JSON.stringify([
         {
@@ -89,7 +89,7 @@ describe('QwenService', () => {
           result: 'Result text',
         },
       ]);
-      
+
       const result = qwenService._parseJsonResponse(json);
       assert.strictEqual(result, 'Result text');
     });
