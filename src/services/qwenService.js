@@ -124,10 +124,9 @@ class QwenService {
 
     try {
       const result = await new Promise((resolve, reject) => {
-        const child = spawn('qwen', args, {
+        const child = spawn('/usr/local/bin/qwen', args, {
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env },
-          shell: true,
         });
 
         let stdout = '';
