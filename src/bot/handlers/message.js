@@ -170,7 +170,7 @@ async function messageHandler(ctx) {
 }
 
 /**
- * Разбиение длинного сообщения на части
+ * Разбиение длинного сообщения на части с учётом HTML-тегов
  * @param {string} text - Текст для разбиения
  * @param {number} maxLength - Максимальная длина
  * @returns {string[]} Массив частей
@@ -194,8 +194,50 @@ function splitMessage(text, maxLength) {
       splitIndex = maxLength;
     }
 
-    chunks.push(remaining.substring(0, splitIndex));
-    remaining = remaining.substring(splitIndex).trim();
+    // Проверяем, не попали ли мы внутрь HTML-тега
+    // Если да — отодвигаем splitIndex до начала тега
+    const beforeSplit = remaining.substring(0, splitIndex);
+    const openTags = findUnclosedTags(beforeSplit);
+    
+    // Если есть незакрытые теги внутри блока кода — ищем конец блока
+    if (openTags.includes('pre') || openTags.includes('code')) {
+      // Ищем ближайший закрывающий тег </pre> или </code> после splitIndex
+      const nextClosePre = remaining.indexOf('</pre>', splitIndex);
+      const nextCloseCode = remaining.indexOf('</code>', splitIndex);
+      const nextClose = Math.min(
+        nextClosePre === -1 ? Infinity : nextClosePre,
+        nextCloseCode === -1 ? Infinity : nextCloseCode
+      );
+      
+      if (nextClose !== Infinity && nextClose < remaining.length) {
+        // Разбиваем ПОСЛЕ закрывающего тега
+        splitIndex = nextClose + (remaining[nextClose + 6] === '>' ? 7 : 6);
+      }
+    }
+
+    let chunk = remaining.substring(0, splitIndex);
+    
+    // Закрываем незакрытые теги в конце чанка
+    const unclosedTags = findUnclosedTags(chunk);
+    if (unclosedTags.length > 0) {
+      // Закрываем теги в обратном порядке
+      for (let i = unclosedTags.length - 1; i >= 0; i--) {
+        chunk += `</${unclosedTags[i]}>`;
+      }
+    }
+    
+    chunks.push(chunk);
+    
+    // Открываем теги в начале оставшейся части
+    if (unclosedTags.length > 0) {
+      let prefix = '';
+      for (const tag of unclosedTags) {
+        prefix += `<${tag}>`;
+      }
+      remaining = prefix + remaining.substring(splitIndex).trim();
+    } else {
+      remaining = remaining.substring(splitIndex).trim();
+    }
   }
 
   if (remaining.length > 0) {
@@ -203,6 +245,44 @@ function splitMessage(text, maxLength) {
   }
 
   return chunks;
+}
+
+/**
+ * Поиск незакрытых HTML-тегов в строке
+ * @param {string} html - HTML строка
+ * @returns {string[]} Массив имен тегов
+ */
+function findUnclosedTags(html) {
+  const tagStack = [];
+  const tagRegex = /<(\/?)(b|i|u|s|code|pre|a|span)(?:\s[^>]*)?>/g;
+  let match;
+  
+  while ((match = tagRegex.exec(html)) !== null) {
+    const isClosing = match[1] === '/';
+    const tagName = match[2];
+    
+    // Пропускаем самозакрывающиеся теги и теги с href (a)
+    if (tagName === 'a') {
+      if (!isClosing) {
+        tagStack.push(tagName);
+      } else {
+        tagStack.pop();
+      }
+      continue;
+    }
+    
+    if (!isClosing) {
+      tagStack.push(tagName);
+    } else {
+      // Закрывающий тег — убираем последний открытый такой же
+      const lastIndex = tagStack.lastIndexOf(tagName);
+      if (lastIndex !== -1) {
+        tagStack.splice(lastIndex, 1);
+      }
+    }
+  }
+  
+  return tagStack;
 }
 
 /**
