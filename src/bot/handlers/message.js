@@ -114,11 +114,9 @@ async function messageHandler(ctx) {
     const chunks = splitMessage(responseText, maxMessageLength);
 
     for (let i = 0; i < chunks.length; i++) {
-      // Экранируем спецсимволы для Telegram MarkdownV2
-      const markdownText = escapeMarkdownV2(chunks[i]);
-
-      await ctx.reply(markdownText, {
-        parse_mode: 'MarkdownV2',
+      // Qwen отправляет готовый Markdown — отправляем как есть
+      await ctx.reply(chunks[i], {
+        parse_mode: 'Markdown',
         reply_parameters: { message_id: ctx.message.message_id },
       });
     }
@@ -167,16 +165,6 @@ async function messageHandler(ctx) {
 
     statsService.incrementError();
   }
-}
-
-/**
- * Экранирование спецсимволов для Telegram MarkdownV2
- * @param {string} text - Текст для экранирования
- * @returns {string} Экранированный текст
- */
-function escapeMarkdownV2(text) {
-  // Символы, которые нужно экранировать в MarkdownV2: _ * [ ] ( ) ~ ` > # + - = | { } . ! \
-  return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 /**
