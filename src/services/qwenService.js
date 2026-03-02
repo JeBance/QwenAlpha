@@ -101,28 +101,28 @@ class QwenService {
     logger.debug({ codeLength: code.length, contextLength: contextMessages.length, tempFile }, 'Running Qwen analysis');
 
     try {
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout } = await execAsync(command, {
         timeout: config.qwen.timeout,
         maxBuffer: config.qwen.maxBuffer,
         env: { ...process.env },
       });
 
       // Удаляем временный файл
-      try { fs.unlinkSync(tempFile); } catch (e) {}
+      try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
 
       // Парсинг JSON ответа
       const result = this._parseJsonResponse(stdout);
-      
+
       const duration = Date.now() - startTime;
       logger.info({ duration, resultLength: result.length }, 'Qwen analysis completed');
-      
+
       return result;
 
     } catch (error) {
       // Удаляем временный файл при ошибке
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-      
-      logger.error({ error, stderr }, 'Qwen analysis failed');
+      try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+
+      logger.error({ error }, 'Qwen analysis failed');
 
       // Обработка различных типов ошибок
       if (error.killed && error.signal === 'SIGTERM') {

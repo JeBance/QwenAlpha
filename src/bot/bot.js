@@ -19,15 +19,12 @@ const fileHandler = require('./handlers/file');
 /**
  * Инициализация Telegraf бота
  * @param {string} token - Telegram Bot API токен
- * @param {Object} config - Конфигурация
  * @returns {Promise<import('telegraf').Telegraf>} Бот
  */
-async function initBot(token, config = {}) {
+async function initBot(token) {
   const bot = new Telegraf(token, {
     handlerTimeout: 120000, // Таймаут обработки (120 секунд)
   });
-  
-  // Глобальная обработка ошибок
   bot.catch((err, ctx) => {
     logger.error({
       err,

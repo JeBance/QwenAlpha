@@ -11,7 +11,9 @@ const { logger } = require('../src/utils/logger');
  * @returns {number[]} Массив user_id
  */
 function parseUserList(value) {
-  if (!value) return [];
+  if (!value) {
+    return [];
+  }
   return value
     .split(',')
     .map(id => parseInt(id.trim(), 10))

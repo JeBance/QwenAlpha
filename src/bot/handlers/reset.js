@@ -1,6 +1,5 @@
 const sessionService = require('../../services/db/sessions');
 const statsService = require('../../services/db/stats');
-const { logger } = require('../../utils/logger');
 
 /**
  * Обработчик команды /reset
@@ -11,25 +10,24 @@ async function resetHandler(ctx) {
   const userId = ctx.state.userId;
   const chatId = ctx.state.chatId;
   const isPrivate = ctx.state.isPrivate;
-  
+
   if (isPrivate) {
     // Личный чат — сброс сессии пользователя
     const sessionKey = `user:${userId}`;
     const session = sessionService.getByKey(sessionKey);
-    
+
     if (session) {
       sessionService.close(session.session_id, chatId);
-      logger.info({ userId, sessionId: session.session_id }, 'Session reset by user');
     }
-    
+
     // Создание новой сессии
-    const newSession = sessionService.create({
+    sessionService.create({
       userId,
       chatId,
       rootMessageId: ctx.message.message_id,
       chatType: 'private',
     });
-    
+
     statsService.incrementSessionCreated();
     
     await ctx.reply(

@@ -15,8 +15,7 @@ const { logger } = require('../../utils/logger');
 async function fileHandler(ctx) {
   const userId = ctx.state.userId;
   const chatId = ctx.state.chatId;
-  const isPrivate = ctx.state.isPrivate;
-  
+
   // Получение файла из сообщения
   let fileId;
   let fileName = 'unknown';

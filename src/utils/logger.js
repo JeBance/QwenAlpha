@@ -1,6 +1,6 @@
 const pino = require('pino');
 const fs = require('fs');
-const { DIRECTORIES, getLogFilePath, initDirectories } = require('./paths');
+const { getLogFilePath, initDirectories } = require('./paths');
 
 /**
  * Получает уровень логирования из переменных окружения

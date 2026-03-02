@@ -213,7 +213,7 @@ async function adminHandler(ctx) {
         parsedValue = false;
       }
       
-      if (data.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         data[key] = parsedValue;
         settings.setData(data);
         await ctx.reply(`✅ Настройка '${key}' установлена в '${parsedValue}'.`);

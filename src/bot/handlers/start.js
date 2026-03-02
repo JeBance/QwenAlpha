@@ -1,4 +1,3 @@
-const adminService = require('../../services/db/admins');
 const sessionService = require('../../services/db/sessions');
 const statsService = require('../../services/db/stats');
 const { logger } = require('../../utils/logger');

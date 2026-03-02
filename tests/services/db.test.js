@@ -9,9 +9,8 @@ const path = require('path');
  */
 describe('DB Services', () => {
   const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qwen-alpha-db-test-'));
-  
+
   // Мокаем пути перед импортом
-  const originalPaths = require('../src/utils/paths');
   const mockPaths = {
     QWEN_ALPHA_HOME: testDir,
     DIRECTORIES: {
@@ -80,16 +79,13 @@ describe('DB Services', () => {
     
     it('должен обновлять last_seen при повторном upsert', () => {
       const firstUser = userService.getById(123456);
-      
-      // Ждём немного и обновляем
-      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-      
+
       // Обновляем пользователя
       const updatedUser = userService.upsert({
         id: 123456,
         username: 'testuser_updated',
       });
-      
+
       assert.strictEqual(updatedUser.username, 'testuser_updated');
       assert.ok(new Date(updatedUser.last_seen) >= new Date(firstUser.last_seen));
     });

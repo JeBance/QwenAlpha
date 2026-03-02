@@ -1,7 +1,6 @@
 const userService = require('../../services/db/users');
 const statsService = require('../../services/db/stats');
 const sessionService = require('../../services/db/sessions');
-const { logger } = require('../../utils/logger');
 
 /**
  * Обработчик команды /stats
@@ -17,8 +16,7 @@ async function statsHandler(ctx) {
     // Личная статистика
     const user = userService.getById(userId);
     const globalStats = statsService.getGlobal();
-    const todayStats = statsService.getDaily();
-    
+
     const statsText = `
 📊 **Ваша статистика**
 

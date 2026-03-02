@@ -1,6 +1,5 @@
 const userService = require('../../services/db/users');
 const { storeManager } = require('../../services/db');
-const { logger } = require('../../utils/logger');
 
 /**
  * Обработчик команды /settings

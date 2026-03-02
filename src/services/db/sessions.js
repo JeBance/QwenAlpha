@@ -213,7 +213,9 @@ class SessionService {
     
     while (currentId) {
       const message = session.message_tree[currentId];
-      if (!message) break;
+      if (!message) {
+        break;
+      }
       
       chain.unshift({
         role: message.user_id === 'bot' ? 'assistant' : 'user',
@@ -243,7 +245,9 @@ class SessionService {
     
     if (Array.isArray(data[chatKey])) {
       sessionIndex = data[chatKey].findIndex(s => s.session_id === sessionId);
-      if (sessionIndex === -1) return null;
+      if (sessionIndex === -1) {
+        return null;
+      }
       session = data[chatKey][sessionIndex];
     } else {
       session = data[chatKey];
@@ -273,8 +277,10 @@ class SessionService {
     
     if (Array.isArray(data[chatKey])) {
       const index = data[chatKey].findIndex(s => s.session_id === sessionId);
-      if (index === -1) return false;
-      
+      if (index === -1) {
+        return false;
+      }
+
       data[chatKey][index].status = 'closed';
       data[chatKey][index].closed_at = new Date().toISOString();
     } else if (data[chatKey]?.session_id === sessionId) {
