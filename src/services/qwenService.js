@@ -1,12 +1,9 @@
-const { exec } = require('child_process');
-const { promisify } = require('util');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { logger } = require('../utils/logger');
 const config = require('../config');
-
-const execAsync = promisify(exec);
 
 /**
  * Класс ошибки Qwen
@@ -43,16 +40,34 @@ class QwenService {
    * @returns {Promise<boolean>} true если Qwen доступен
    */
   async checkAvailability() {
-    try {
-      const { stdout } = await execAsync('qwen --version', {
-        timeout: 5000,
+    return new Promise((resolve) => {
+      const child = spawn('qwen', ['--version'], {
+        stdio: ['ignore', 'pipe', 'ignore'],
       });
-      logger.info({ version: stdout.trim() }, 'Qwen Code available');
-      return true;
-    } catch (error) {
-      logger.warn({ error: error.message }, 'Qwen Code not available');
-      return false;
-    }
+
+      let stdout = '';
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          logger.info({ version: stdout.trim() }, 'Qwen Code available');
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+
+      child.on('error', () => {
+        resolve(false);
+      });
+
+      setTimeout(() => {
+        child.kill();
+        resolve(false);
+      }, 5000);
+    });
   }
 
   /**
@@ -64,6 +79,7 @@ class QwenService {
    */
   async analyzeCode(code, contextMessages = []) {
     const startTime = Date.now();
+    let tempFile = null;
 
     // Проверка доступности Qwen
     const isAvailable = await this.checkAvailability();
@@ -89,18 +105,17 @@ class QwenService {
     }
 
     // Создаём временный файл с промптом
-    const tempFile = path.join(
+    tempFile = path.join(
       os.tmpdir(),
       `qwen-alpha-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.txt`
     );
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
-    // Команда для Qwen — без системного промпта если есть контекст
-    // Перенаправляем stderr в /dev/null чтобы избежать интерактивных подсказок
-    const command =
-      contextMessages.length > 0
-        ? `cat '${tempFile}' | qwen -o json 2>/dev/null`
-        : `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json 2>/dev/null`;
+    // Запускаем Qwen через spawn с передачей stdin из файла
+    const args = ['-o', 'json'];
+    if (contextMessages.length === 0) {
+      args.splice(1, 0, '-p', 'Проанализируй код и дай рекомендации');
+    }
 
     logger.debug(
       { codeLength: code.length, contextLength: contextMessages.length, tempFile },
@@ -108,26 +123,74 @@ class QwenService {
     );
 
     try {
-      const { stdout } = await execAsync(command, {
-        timeout: config.qwen.timeout,
-        maxBuffer: config.qwen.maxBuffer,
-        env: { ...process.env },
+      const result = await new Promise((resolve, reject) => {
+        const child = spawn('qwen', args, {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: { ...process.env },
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        // Читаем файл и передаём в stdin
+        const fileStream = fs.createReadStream(tempFile);
+        fileStream.pipe(child.stdin);
+
+        child.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        child.on('close', (code) => {
+          // Удаляем временный файл
+          try {
+            fs.unlinkSync(tempFile);
+          } catch (e) {
+            /* ignore */
+          }
+
+          if (code !== 0) {
+            reject(new Error(`Qwen exited with code ${code}: ${stderr}`));
+          } else {
+            resolve(stdout);
+          }
+        });
+
+        child.on('error', (err) => {
+          try {
+            fs.unlinkSync(tempFile);
+          } catch (e) {
+            /* ignore */
+          }
+          reject(err);
+        });
+
+        // Таймаут
+        const timeoutId = setTimeout(() => {
+          child.kill('SIGTERM');
+          try {
+            fs.unlinkSync(tempFile);
+          } catch (e) {
+            /* ignore */
+          }
+          reject(new Error('Qwen timeout'));
+        }, config.qwen.timeout);
+
+        child.on('close', () => clearTimeout(timeoutId));
       });
 
-      // Удаляем временный файл
-      try {
-        fs.unlinkSync(tempFile);
-      } catch (e) {
-        /* ignore */
-      }
+      const stdout = result;
 
       // Парсинг JSON ответа
-      const result = this._parseJsonResponse(stdout);
+      const parsedResult = this._parseJsonResponse(stdout);
 
       const duration = Date.now() - startTime;
-      logger.info({ duration, resultLength: result.length }, 'Qwen analysis completed');
+      logger.info({ duration, resultLength: parsedResult.length }, 'Qwen analysis completed');
 
-      return result;
+      return parsedResult;
     } catch (error) {
       // Удаляем временный файл при ошибке
       try {
