@@ -12,16 +12,16 @@ async function resetHandler(ctx) {
   const isPrivate = ctx.state.isPrivate;
 
   if (isPrivate) {
-    // Личный чат — сброс сессии пользователя
+    // Личный чат — полное удаление старой сессии
     const sessionKey = `user:${userId}`;
-    const session = sessionService.getByKey(sessionKey);
+    const oldSession = sessionService.getByKey(sessionKey);
 
-    if (session) {
-      sessionService.close(session.session_id, chatId);
+    if (oldSession) {
+      sessionService.remove(sessionKey);
     }
 
     // Создание новой сессии
-    sessionService.create({
+    const newSession = sessionService.create({
       userId,
       chatId,
       rootMessageId: ctx.message.message_id,
@@ -31,7 +31,9 @@ async function resetHandler(ctx) {
     statsService.incrementSessionCreated();
 
     await ctx.reply(
-      '🔄 **Сессия сброшена**\n\n' + 'Контекст предыдущего диалога очищен. Начнём с чистого листа!',
+      '🔄 **Сессия сброшена**\n\n' +
+        'Контекст предыдущего диалога очищен. Начнём с чистого листа!\n\n' +
+        `🆔 Новая сессия: \`${newSession.session_id}\``,
       { parse_mode: 'Markdown' }
     );
   } else {

@@ -305,6 +305,24 @@ class SessionService {
   }
 
   /**
+   * Полное удаление сессии
+   * @param {string} sessionKey - Ключ сессии (user:{userId} или chat:{chatId})
+   * @returns {boolean} Успешность
+   */
+  remove(sessionKey) {
+    const data = this._store.getData();
+
+    if (data[sessionKey]) {
+      delete data[sessionKey];
+      this._store.setData(data);
+      logger.info({ sessionKey }, 'Session removed');
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Очистка просроченных сессий
    * @returns {number} Количество удалённых сессий
    */
