@@ -169,11 +169,14 @@ class QwenService {
 
       for (const msg of messages) {
         // Сначала проверяем result сообщение (оно содержит финальный ответ)
-        if (msg.type === 'result' && msg.result) {
-          // result должен быть строкой, а не объектом
-          if (typeof msg.result === 'string' && msg.result.length < 10000) {
+        if (msg.type === 'result') {
+          logger.debug({ resultType: typeof msg.result, resultLength: msg.result?.length, result: msg.result?.substring?.(0, 100) }, 'Checking result message');
+          
+          // result должен быть строкой
+          if (typeof msg.result === 'string') {
             textContents.push(msg.result);
             hasResult = true;
+            logger.info({ resultLength: msg.result.length }, 'Found result text');
             break;
           }
         }

@@ -274,7 +274,7 @@ chmod -R 755 ~/.qwen-alpha/
 
 ## 📞 Контакты
 
-- **Telegram**: @QwenAlphaRobot (бот)
+- **Telegram**: [@QwenAlphaRobot](https://t.me/QwenAlphaRobot) (бот)
 - **GitHub**: https://github.com/JeBance/QwenAlpha/issues
 
 ---
