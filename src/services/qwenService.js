@@ -32,7 +32,7 @@ class QwenService {
       return '';
     }
     // Экранирование специальных символов
-    return str.replace(/'/g, "'\\''").replace(/"/g, '\\"').replace(/`/g, '\\`');
+    return str.replace(/'/g, '\'\\\'\'').replace(/"/g, '\\"').replace(/`/g, '\\`');
   }
 
   /**
@@ -106,13 +106,13 @@ class QwenService {
 
     // Формирование промпта с контекстом
     let fullPrompt = '';
-    
+
     if (contextMessages && contextMessages.length > 0) {
       // Добавляем контекст диалога
       const contextText = contextMessages
         .map((msg) => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
         .join('\n');
-      
+
       fullPrompt = `${contextText}\n\nUser: ${code}\n\nAssistant:`;
     } else {
       fullPrompt = `Проанализируй код и дай рекомендации:\n\n${code}`;
@@ -157,9 +157,13 @@ class QwenService {
 
       child.on('close', (code) => {
         clearTimeout(timeoutId);
-        
+
         // Удаляем временный файл
-        try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+        try {
+          fs.unlinkSync(tempFile);
+        } catch (e) {
+          /* ignore */
+        }
 
         if (timedOut) {
           reject(new QwenError('Анализ прерван по таймауту', null, 'TIMEOUT'));
@@ -183,7 +187,11 @@ class QwenService {
 
       child.on('error', (err) => {
         clearTimeout(timeoutId);
-        try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+        try {
+          fs.unlinkSync(tempFile);
+        } catch (e) {
+          /* ignore */
+        }
         reject(err);
       });
     });

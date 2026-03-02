@@ -60,7 +60,7 @@ async function main() {
     // Если только инициализация
     if (options.initOnly) {
       console.log('✅ Qwen Alpha хранилища инициализированы');
-      console.log(`📁 Данные хранятся в: ~/.qwen-alpha/`);
+      console.log('📁 Данные хранятся в: ~/.qwen-alpha/');
       process.exit(0);
     }
 
