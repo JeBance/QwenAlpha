@@ -146,6 +146,8 @@ class QwenService {
         });
 
         child.on('close', (code) => {
+          logger.debug({ code, stdout: stdout.substring(0, 200), stderr }, 'Qwen closed');
+          
           // Удаляем временный файл
           try {
             fs.unlinkSync(tempFile);
