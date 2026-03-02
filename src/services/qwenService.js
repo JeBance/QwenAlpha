@@ -40,17 +40,47 @@ class QwenService {
    * @returns {Promise<boolean>} true если Qwen доступен
    */
   async checkAvailability() {
-    try {
-      const stdout = execSync('/usr/local/bin/qwen --version', {
-        timeout: 5000,
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).toString();
-      logger.info({ version: stdout.trim() }, 'Qwen Code available');
-      return true;
-    } catch (error) {
-      logger.warn({ error: error.message }, 'Qwen Code not available');
-      return false;
-    }
+    return new Promise((resolve) => {
+      const child = spawn('/usr/local/bin/qwen', ['--version'], {
+        env: { ...process.env },
+      });
+
+      let stdout = '';
+      let resolved = false;
+
+      const timeoutId = setTimeout(() => {
+        child.kill('SIGTERM');
+        if (!resolved) {
+          resolved = true;
+          resolve(false);
+        }
+      }, 5000);
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.on('close', (code) => {
+        clearTimeout(timeoutId);
+        if (!resolved) {
+          resolved = true;
+          if (code === 0 && stdout.trim()) {
+            logger.info({ version: stdout.trim() }, 'Qwen Code available');
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        }
+      });
+
+      child.on('error', () => {
+        clearTimeout(timeoutId);
+        if (!resolved) {
+          resolved = true;
+          resolve(false);
+        }
+      });
+    });
   }
 
   /**
