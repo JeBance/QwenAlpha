@@ -1,5 +1,6 @@
 const userService = require('../../services/db/users');
 const adminService = require('../../services/db/admins');
+const { storeManager } = require('../../services/db');
 const { logger } = require('../../utils/logger');
 const config = require('../../config');
 
@@ -51,7 +52,17 @@ async function authMiddleware(ctx, next) {
     await ctx.reply('⛔ Ваш аккаунт заблокирован.');
     return;
   }
+
+  // Проверка блокировки бота (lock mode)
+  const settings = storeManager.get('settings');
+  const settingsData = settings.getData();
   
+  if (settingsData.locked && !adminService.isAdmin(userId)) {
+    logger.warn({ userId }, 'User blocked by lock mode');
+    await ctx.reply('🔒 Бот временно заблокирован администратором. Попробуйте позже.');
+    return;
+  }
+
   // Регистрация супер-админа (первый пользователь)
   const isNewSuperAdmin = adminService.registerSuperAdmin(userId);
   if (isNewSuperAdmin) {

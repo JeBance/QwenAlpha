@@ -50,6 +50,8 @@ async function adminHandler(ctx) {
 **Управление пользователями:**
 /admin ban <user_id> — забанить
 /admin unban <user_id> — разбанить
+/admin lock — заблокировать бота для всех кроме админов
+/admin unlock — разблокировать бота
 
 **Сессии:**
 /admin sessions list — список сессий
@@ -128,7 +130,7 @@ async function adminHandler(ctx) {
         await ctx.reply('❌ Usage: /admin unban <user_id>');
         return;
       }
-      
+
       const success = userService.unban(targetId);
       if (success) {
         await ctx.reply(`✅ Пользователь ${targetId} разбанен.`);
@@ -138,7 +140,31 @@ async function adminHandler(ctx) {
       }
       break;
     }
-    
+
+    case 'lock': {
+      // Блокировка всех пользователей кроме админов
+      const settings = storeManager.get('settings');
+      const data = settings.getData();
+      data.locked = true;
+      settings.setData(data);
+      
+      await ctx.reply('🔒 **Бот заблокирован для всех пользователей кроме админов.**\n\nИспользуйте /admin unlock для разблокировки.', { parse_mode: 'Markdown' });
+      logger.info({ userId }, 'Bot locked for all users except admins');
+      break;
+    }
+
+    case 'unlock': {
+      // Разблокировка бота
+      const settings = storeManager.get('settings');
+      const data = settings.getData();
+      data.locked = false;
+      settings.setData(data);
+      
+      await ctx.reply('🔓 **Бот разблокирован.**\n\nВсе пользователи могут снова использовать бота.', { parse_mode: 'Markdown' });
+      logger.info({ userId }, 'Bot unlocked for all users');
+      break;
+    }
+
     case 'sessions': {
       const subCommand = args[2];
       
