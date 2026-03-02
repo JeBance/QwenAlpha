@@ -114,11 +114,11 @@ async function messageHandler(ctx) {
     const chunks = splitMessage(responseText, maxMessageLength);
 
     for (let i = 0; i < chunks.length; i++) {
-      // Используем Markdown только для коротких ответов без JSON
-      const useMarkdown = chunks.length === 1 && !responseText.startsWith('{');
+      // Определяем тип форматирования
+      const parseMode = determineParseMode(chunks[i]);
 
       await ctx.reply(chunks[i], {
-        parse_mode: useMarkdown ? 'Markdown' : undefined,
+        parse_mode: parseMode,
         reply_parameters: { message_id: ctx.message.message_id },
       });
     }
@@ -203,6 +203,26 @@ function splitMessage(text, maxLength) {
   }
 
   return chunks;
+}
+
+/**
+ * Определение режима парсинга для сообщения
+ * @param {string} text - Текст сообщения
+ * @returns {'Markdown' | undefined} Режим парсинга
+ */
+function determineParseMode(text) {
+  // Проверяем наличие Markdown-элементов
+  const hasMarkdownElements =
+    /(^|\s)#[^\s#]/.test(text) || // Заголовки #
+    /\*\*[^*]+\*\*/.test(text) || // Жирный **text**
+    /\*[^*]+\*/.test(text) || // Курсив *text*
+    /`[^`]+`/.test(text) || // Код `code`
+    /```[\s\S]*```/.test(text) || // Блок кода ```code```
+    /^\s*[-*+]\s/.test(text) || // Списки
+    /^\s*\d+\.\s/.test(text) || // Нумерованные списки
+    /\[([^\]]+)]/.test(text); // Ссылки [text]
+
+  return hasMarkdownElements ? 'Markdown' : undefined;
 }
 
 module.exports = messageHandler;
