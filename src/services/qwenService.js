@@ -93,9 +93,10 @@ class QwenService {
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
     // Команда для Qwen — без системного промпта если есть контекст
+    // Перенаправляем stderr в /dev/null чтобы избежать интерактивных подсказок
     const command = contextMessages.length > 0
-      ? `cat '${tempFile}' | qwen -o json`
-      : `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json`;
+      ? `cat '${tempFile}' | qwen -o json 2>/dev/null`
+      : `cat '${tempFile}' | qwen -p "Проанализируй код и дай рекомендации" -o json 2>/dev/null`;
 
     logger.debug({ codeLength: code.length, contextLength: contextMessages.length, tempFile }, 'Running Qwen analysis');
 
