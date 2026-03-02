@@ -87,10 +87,11 @@ class QwenService {
    * Анализ кода через Qwen Code headless
    * @param {string} code - Код для анализа
    * @param {Array} [contextMessages] - Контекстные сообщения для истории диалога
+   * @param {number} [userId] - ID пользователя (для проверки прав супер-админа)
    * @returns {Promise<string>} Ответ от Qwen
    * @throws {QwenError} Ошибка при анализе
    */
-  async analyzeCode(code, contextMessages = []) {
+  async analyzeCode(code, contextMessages = [], userId = null) {
     const startTime = Date.now();
     let tempFile = null;
 
@@ -104,8 +105,18 @@ class QwenService {
       );
     }
 
+    // Получение системного промпта
+    const { systemPromptService } = require('./db/systemPrompt');
+    const systemPrompt = systemPromptService.get();
+
+    // Проверка, супер-админ ли пользователь
+    const isAdmin = userId ? require('./db/admins').isSuperAdmin(userId) : false;
+
     // Формирование промпта с контекстом
     let fullPrompt = '';
+
+    // Добавляем системный промпт в начало
+    fullPrompt = `${systemPrompt}\n\n`;
 
     if (contextMessages && contextMessages.length > 0) {
       // Добавляем контекст диалога
@@ -113,9 +124,9 @@ class QwenService {
         .map((msg) => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
         .join('\n');
 
-      fullPrompt = `${contextText}\n\nUser: ${code}\n\nAssistant:`;
+      fullPrompt += `${contextText}\n\nUser: ${code}\n\nAssistant:`;
     } else {
-      fullPrompt = `Проанализируй код и дай рекомендации:\n\n${code}`;
+      fullPrompt += `User: ${code}\n\nAssistant:`;
     }
 
     // Создаём временный файл с промптом

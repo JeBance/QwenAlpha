@@ -76,13 +76,17 @@ async function messageHandler(ctx) {
     }
 
     // Запрос к Qwen
-    const result = await qwenService.analyzeCode(prompt, contextMessages);
+    const result = await qwenService.analyzeCode(prompt, contextMessages, userId);
 
     const duration = Date.now() - startTime;
     statsService.updateAvgResponseTime(duration);
 
+    // Фильтрация ответа (скрытие чувствительной информации)
+    const { filterResponse } = require('../middleware/security');
+    let responseText = filterResponse(result, userId);
+
     // Проверка на пустой ответ
-    if (!result || result.trim().length === 0) {
+    if (!responseText || responseText.trim().length === 0) {
       if (loadingMsgId) {
         await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsgId);
       }
@@ -91,9 +95,6 @@ async function messageHandler(ctx) {
       });
       return;
     }
-
-    // Форматирование ответа
-    let responseText = result;
 
     // В группах добавляем упоминание только если отвечаем на сообщение пользователя (не бота)
     if (!isPrivate && ctx.message?.reply_to_message && !ctx.message.reply_to_message.from.is_bot) {

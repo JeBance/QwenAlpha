@@ -5,6 +5,7 @@ const { loggingMiddleware } = require('./middleware/logging');
 const { rateLimitMiddleware } = require('./middleware/rateLimit');
 const { sessionMiddleware } = require('./middleware/session');
 const { authMiddleware } = require('./middleware/auth');
+const { securityMiddleware } = require('./middleware/security');
 
 // Handlers
 const startHandler = require('./handlers/start');
@@ -15,6 +16,11 @@ const settingsHandler = require('./handlers/settings');
 const adminHandler = require('./handlers/admin');
 const messageHandler = require('./handlers/message');
 const fileHandler = require('./handlers/file');
+const {
+  setSystemPromptHandler,
+  getSystemPromptHandler,
+  resetSystemPromptHandler,
+} = require('./handlers/systemPrompt');
 
 /**
  * Инициализация Telegraf бота
@@ -52,6 +58,7 @@ async function initBot(token) {
   bot.use(loggingMiddleware);
   bot.use(rateLimitMiddleware);
   bot.use(authMiddleware);
+  bot.use(securityMiddleware);
   bot.use(sessionMiddleware);
 
   // Commands
@@ -61,6 +68,9 @@ async function initBot(token) {
   bot.command('stats', statsHandler);
   bot.command('settings', settingsHandler);
   bot.command('admin', adminHandler);
+  bot.command('setSystemPrompt', setSystemPromptHandler);
+  bot.command('getSystemPrompt', getSystemPromptHandler);
+  bot.command('resetSystemPrompt', resetSystemPromptHandler);
 
   // Сообщения
   bot.on(message('text'), messageHandler);
