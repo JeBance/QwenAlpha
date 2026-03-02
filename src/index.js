@@ -50,6 +50,36 @@ async function startBot(options = {}) {
 
     logger.info('Bot launched successfully');
 
+    // Отправка уведомления администратору о запуске
+    try {
+      const botInfo = await bot.telegram.getMe();
+      const adminService = require('./services/db/admins');
+      const allAdmins = adminService.getAllAdminIds();
+      
+      if (allAdmins.length > 0) {
+        const startupMessage = 
+          '✅ <b>Бот запущен</b>\n\n' +
+          `🤖 Имя: <b>${botInfo.first_name}</b>\n` +
+          `🆔 ID: <code>${botInfo.id}</code>\n` +
+          `👤 Username: @${botInfo.username}\n\n` +
+          `🕐 Время: ${new Date().toLocaleString('ru-RU')}\n\n` +
+          'Бот готов к работе! 🚀';
+        
+        // Отправляем всем администраторам
+        for (const admin of allAdmins) {
+          await bot.telegram.sendMessage(admin.id, startupMessage, {
+            parse_mode: 'HTML',
+          }).catch((err) => {
+            logger.warn({ adminId: admin.id, error: err.message }, 'Failed to send startup message');
+          });
+        }
+        
+        logger.info({ adminCount: allAdmins.length }, 'Startup notifications sent');
+      }
+    } catch (err) {
+      logger.warn({ error: err.message }, 'Failed to send startup notification');
+    }
+
     // Обработчики graceful shutdown
     const shutdown = async (signal) => {
       logger.info({ signal }, 'Graceful shutdown initiated');

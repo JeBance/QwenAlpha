@@ -125,6 +125,25 @@ class AdminService {
   }
 
   /**
+   * Получение массива всех admin_id (супер-админ + обычные)
+   * @returns {Array} Массив объектов {id, isSuperAdmin}
+   */
+  getAllAdminIds() {
+    const data = this._store.getData();
+    const result = [];
+    
+    if (data.super_admin !== null) {
+      result.push({ id: data.super_admin, isSuperAdmin: true });
+    }
+    
+    for (const adminId of data.admins) {
+      result.push({ id: adminId, isSuperAdmin: false });
+    }
+    
+    return result;
+  }
+
+  /**
    * Получение списка обычных админов (не супер-админ)
    * @returns {Array} Массив user_id
    */
