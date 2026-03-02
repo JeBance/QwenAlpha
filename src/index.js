@@ -45,15 +45,7 @@ async function startBot(options = {}) {
     // Инициализация и запуск бота
     const bot = await initBot(config.bot.token, config);
 
-    // Запуск в режиме polling
-    await bot.launch();
-
-    // Небольшая задержка для завершения инициализации
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    logger.info('Bot launched successfully');
-
-    // Отправка уведомления администратору о запуске
+    // Отправка уведомления администратору о запуске (ДО launch)
     try {
       const botInfo = await bot.telegram.getMe();
       const adminService = require('./services/db/admins');
@@ -66,7 +58,7 @@ async function startBot(options = {}) {
           `🆔 ID: <code>${botInfo.id}</code>\n` +
           `👤 Username: @${botInfo.username}\n\n` +
           `🕐 Время: ${new Date().toLocaleString('ru-RU')}\n\n` +
-          'Бот готов к работе! 🚀';
+          `Бот готов к работе! 🚀`;
 
         // Сначала отправляем супер-админу
         const superAdmin = allAdmins.find((a) => a.isSuperAdmin);
@@ -92,6 +84,11 @@ async function startBot(options = {}) {
     } catch (err) {
       logger.warn({ error: err.message }, 'Failed to send startup notification');
     }
+
+    // Запуск в режиме polling
+    await bot.launch();
+
+    logger.info('Bot launched successfully');
 
     // Обработчики graceful shutdown
     const shutdown = async (signal) => {
