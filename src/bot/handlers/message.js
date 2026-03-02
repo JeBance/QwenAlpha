@@ -315,13 +315,16 @@ function markdownToHtml(text) {
     return `<code>${escapedCode}</code>`;
   });
 
+  // Цитаты > text → <blockquote>text</blockquote> (до экранирования)
+  html = html.replace(/^>\s*(.+)$/gm, '<blockquote>$1</blockquote>');
+
   // Теперь экранируем ВСЁ, кроме уже созданных HTML-тегов
   // Временная замена тегов
   const tempTags = [];
   let tagIndex = 0;
-  
-  // Сохраняем теги
-  html = html.replace(/<(\/?)(b|i|u|s|code|pre|a|span)[^>]*>/g, (match) => {
+
+  // Сохраняем теги (добавили blockquote)
+  html = html.replace(/<(\/?)(b|i|u|s|code|pre|a|span|blockquote)[^>]*>/g, (match) => {
     tempTags.push(match);
     return `%%TAG${tagIndex++}%%`;
   });
