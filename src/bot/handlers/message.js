@@ -115,7 +115,10 @@ async function messageHandler(ctx) {
 
     for (let i = 0; i < chunks.length; i++) {
       // Конвертируем Markdown в HTML для Telegram
-      const htmlText = markdownToHtml(chunks[i]);
+      let htmlText = markdownToHtml(chunks[i]);
+      
+      // Очищаем от битых тегов
+      htmlText = sanitizeHtml(htmlText);
 
       await ctx.reply(htmlText, {
         parse_mode: 'HTML',
@@ -279,6 +282,66 @@ function splitMessage(text, maxLength) {
   }
 
   return chunks;
+}
+
+/**
+ * Очистка HTML от битых тегов перед отправкой в Telegram
+ * @param {string} html - HTML текст
+ * @returns {string} Очищенный HTML
+ */
+function sanitizeHtml(html) {
+  let cleaned = html;
+  
+  // Удаляем незакрытые теги <code> которые встречаются в тексте
+  // Например: "в блоках \<code>\</code>" → "в блоках <code></code>"
+  cleaned = cleaned.replace(/\\<code>/g, '<code>');
+  cleaned = cleaned.replace(/\\<\/code>/g, '</code>');
+  cleaned = cleaned.replace(/\\<pre>/g, '<pre>');
+  cleaned = cleaned.replace(/\\<\/pre>/g, '</pre>');
+  
+  // Исправляем двойное экранирование &amp;lt; → &lt;
+  cleaned = cleaned.replace(/&amp;lt;/g, '&lt;');
+  cleaned = cleaned.replace(/&amp;gt;/g, '&gt;');
+  cleaned = cleaned.replace(/&amp;amp;/g, '&amp;');
+  
+  // Удаляем битые теги, которые не закрываются
+  // Считаем открывающие и закрывающие теги
+  const tagCounts = {};
+  const openTags = cleaned.match(/<(b|i|u|s|code|pre|a|blockquote)(?:\s[^>]*)?>/g) || [];
+  const closeTags = cleaned.match(/<\/(b|i|u|s|code|pre|a|blockquote)>/g) || [];
+  
+  // Считаем баланс
+  for (const tag of openTags) {
+    const match = tag.match(/<(b|i|u|s|code|pre|a|blockquote)/);
+    if (match) {
+      const tagName = match[1];
+      tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
+    }
+  }
+  for (const tag of closeTags) {
+    const match = tag.match(/<\/(b|i|u|s|code|pre|a|blockquote)>/);
+    if (match) {
+      const tagName = match[1];
+      tagCounts[tagName] = (tagCounts[tagName] || 0) - 1;
+    }
+  }
+  
+  // Если есть незакрытые теги — удаляем их
+  for (const [tagName, count] of Object.entries(tagCounts)) {
+    if (count > 0) {
+      // Есть незакрытые открывающие теги — удаляем лишние
+      for (let i = 0; i < count; i++) {
+        cleaned = cleaned.replace(new RegExp(`<${tagName}(?:\\s[^>]*)?>`), '');
+      }
+    } else if (count < 0) {
+      // Есть лишние закрывающие теги — удаляем
+      for (let i = 0; i < Math.abs(count); i++) {
+        cleaned = cleaned.replace(new RegExp(`</${tagName}>`), '');
+      }
+    }
+  }
+  
+  return cleaned;
 }
 
 /**
