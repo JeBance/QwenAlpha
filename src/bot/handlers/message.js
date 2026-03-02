@@ -213,25 +213,53 @@ function splitMessage(text, maxLength) {
 function markdownToHtml(text) {
   let html = text;
 
-  // Заголовки обрабатываем ДО экранирования
+  // Заголовки обрабатываем ПЕРВЫМИ (до экранирования)
   // ### Заголовок → <b>📌 Заголовок</b>\n
   html = html.replace(/^###\s+(.+)$/gm, '<b>📌 $1</b>');
   html = html.replace(/^##\s+(.+)$/gm, '<b>🔹 $1</b>');
   html = html.replace(/^#\s+(.+)$/gm, '<b>🔸 $1</b>');
 
-  // Сначала экранируем HTML-спецсимволы
+  // Блоки кода ```code``` → <pre><code>code</code></pre> (до экранирования)
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+    // Экранируем код внутри блока
+    const escapedCode = code
+      .trim()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `<pre><code class="language-${lang || 'text'}">${escapedCode}</code></pre>`;
+  });
+
+  // Inline код `code` → <code>code</code> (до экранирования)
+  html = html.replace(/`([^`]+)`/g, (match, code) => {
+    const escapedCode = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `<code>${escapedCode}</code>`;
+  });
+
+  // Теперь экранируем ВСЁ, кроме уже созданных HTML-тегов
+  // Временная замена тегов
+  const tempTags = [];
+  let tagIndex = 0;
+  
+  // Сохраняем теги
+  html = html.replace(/<(\/?)(b|i|u|s|code|pre|a|span)[^>]*>/g, (match) => {
+    tempTags.push(match);
+    return `%%TAG${tagIndex++}%%`;
+  });
+
+  // Экранируем спецсимволы
   html = html
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Блоки кода ```code``` → <pre><code>code</code></pre>
-  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
-    return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;
+  // Восстанавливаем теги
+  tempTags.forEach((tag, index) => {
+    html = html.replace(`%%TAG${index}%%`, tag);
   });
-
-  // Inline код `code` → <code>code</code>
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
   // Жирный **text** → <b>text</b>
   html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
