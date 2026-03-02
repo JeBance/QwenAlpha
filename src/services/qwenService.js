@@ -41,7 +41,8 @@ class QwenService {
    */
   async checkAvailability() {
     return new Promise((resolve) => {
-      const child = spawn('/usr/local/bin/qwen', ['--version'], {
+      // Используем 'qwen' вместо хардкодного пути — работает на всех системах
+      const child = spawn('qwen', ['--version'], {
         env: { ...process.env },
       });
 
@@ -153,8 +154,8 @@ class QwenService {
 
     // Запускаем Qwen через spawn с правильной обработкой stdin
     return new Promise((resolve, reject) => {
-      // Используем -o text для получения текстового ответа вместо JSON stream
-      const child = spawn('/usr/local/bin/qwen', ['-o', 'text'], {
+      // Используем 'qwen' вместо хардкодного пути — работает на всех системах
+      const child = spawn('qwen', ['-o', 'text'], {
         env: { ...process.env },
       });
 
