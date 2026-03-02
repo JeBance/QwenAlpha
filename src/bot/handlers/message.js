@@ -199,27 +199,79 @@ function splitMessage(text, maxLength) {
     const openPre = beforeSplit.split('<pre>').length - 1;
     const closePre = beforeSplit.split('</pre>').length - 1;
     
-    // Если есть незакрытый <pre> — ищем его начало и переносим весь блок
+    // Если есть незакрытый <pre> — обрабатываем блок кода
     if (openPre > closePre) {
       // Нашли последнее открытие <pre> до splitIndex
       const lastOpenPre = beforeSplit.lastIndexOf('<pre>');
+      const codeStart = lastOpenPre + 5; // длина '<pre>'
       
-      // Проверяем, помещается ли текст ДО блока кода
-      if (lastOpenPre > 100) {
-        // Можем разбить перед блоком кода
-        splitIndex = lastOpenPre;
-      } else {
-        // Ищем конец блока </pre> после splitIndex
-        const nextClosePre = remaining.indexOf('</pre>', splitIndex);
-        if (nextClosePre !== -1 && nextClosePre < remaining.length) {
-          // Разбиваем ПОСЛЕ конца блока кода
-          splitIndex = nextClosePre + 6;
+      // Ищем конец блока </pre>
+      const closeTagIndex = remaining.indexOf('</pre>', splitIndex);
+      
+      if (closeTagIndex !== -1) {
+        // Полный блок кода от lastOpenPre до closeTagIndex+6
+        const fullCodeBlock = remaining.substring(lastOpenPre, closeTagIndex + 6);
+        
+        // Если блок кода помещается до splitIndex — оставляем как есть
+        if (closeTagIndex + 6 <= splitIndex) {
+          // Блок целиком в этом чанке, ничего не делаем
+        } 
+        // Если блок кода слишком длинный (> maxLength) — разбиваем его
+        else if (fullCodeBlock.length > maxLength) {
+          // Находим последнюю полную строку кода перед maxLength
+          const codeContent = remaining.substring(codeStart, splitIndex);
+          const lastNewline = codeContent.lastIndexOf('\n');
+          
+          if (lastNewline > 0) {
+            // Разбиваем по последней строке
+            splitIndex = codeStart + lastNewline;
+          } else {
+            // Нет переносов — разбиваем как есть
+            splitIndex = codeStart + Math.floor(maxLength / 2);
+          }
+        }
+        // Иначе разбиваем ПЕРЕД блоком кода (если есть место)
+        else if (lastOpenPre > 100) {
+          splitIndex = lastOpenPre;
+        }
+        // Иначе разбиваем ПОСЛЕ блока кода
+        else {
+          splitIndex = closeTagIndex + 6;
+        }
+      }
+      // Если </pre> не найден (блок продолжается до конца текста)
+      else {
+        // Проверяем, не слишком ли длинный блок
+        const codeToMax = remaining.substring(codeStart, maxLength);
+        const lastNewlineInCode = codeToMax.lastIndexOf('\n');
+        
+        if (lastNewlineInCode > 0) {
+          splitIndex = codeStart + lastNewlineInCode;
+        } else {
+          splitIndex = codeStart + Math.floor(maxLength / 2);
         }
       }
     }
 
-    chunks.push(remaining.substring(0, splitIndex));
-    remaining = remaining.substring(splitIndex).trim();
+    let chunk = remaining.substring(0, splitIndex);
+    
+    // Проверяем, разорвали ли мы блок кода
+    const chunkOpenPre = chunk.split('<pre>').length - 1;
+    const chunkClosePre = chunk.split('</pre>').length - 1;
+    
+    // Если блок кода разорван — закрываем его в конце чанка
+    if (chunkOpenPre > chunkClosePre) {
+      chunk += '</code></pre>';
+    }
+    
+    chunks.push(chunk);
+    
+    // Если блок кода был разорван — открываем его в начале следующего
+    if (chunkOpenPre > chunkClosePre) {
+      remaining = '<pre><code>' + remaining.substring(splitIndex).trim();
+    } else {
+      remaining = remaining.substring(splitIndex).trim();
+    }
   }
 
   if (remaining.length > 0) {
