@@ -127,7 +127,8 @@ class QwenService {
 
     // Запускаем Qwen через spawn с правильной обработкой stdin
     return new Promise((resolve, reject) => {
-      const child = spawn('/usr/local/bin/qwen', ['-o', 'json'], {
+      // Используем -o text для получения текстового ответа вместо JSON stream
+      const child = spawn('/usr/local/bin/qwen', ['-o', 'text'], {
         env: { ...process.env },
       });
 
@@ -139,7 +140,7 @@ class QwenService {
       const timeoutId = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
-        reject(new Error('Qwen timeout'));
+        reject(new QwenError('Анализ прерван по таймауту', null, 'TIMEOUT'));
       }, config.qwen.timeout);
 
       // Записываем промпт в stdin
@@ -147,7 +148,9 @@ class QwenService {
       child.stdin.end();
 
       child.stdout.on('data', (data) => {
-        stdout += data.toString();
+        const chunk = data.toString();
+        stdout += chunk;
+        logger.debug({ chunkLength: chunk.length }, 'Received Qwen chunk');
       });
 
       child.stderr.on('data', (data) => {
@@ -166,8 +169,7 @@ class QwenService {
         }
 
         if (timedOut) {
-          reject(new QwenError('Анализ прерван по таймауту', null, 'TIMEOUT'));
-          return;
+          return; // Уже reject в timeout
         }
 
         if (code !== 0) {
@@ -176,8 +178,8 @@ class QwenService {
           return;
         }
 
-        // Парсинг JSON ответа
-        const parsedResult = this._parseJsonResponse(stdout);
+        // Очищаем stdout от служебных сообщений
+        const parsedResult = this._parseTextResponse(stdout);
 
         const duration = Date.now() - startTime;
         logger.info({ duration, resultLength: parsedResult.length }, 'Qwen analysis completed');
@@ -198,7 +200,32 @@ class QwenService {
   }
 
   /**
-   * Парсинг JSON ответа от Qwen
+   * Парсинг текстового ответа от Qwen (режим -o text)
+   * @param {string} stdout - Текст от Qwen
+   * @returns {string} Очищенный текст ответа
+   * @private
+   */
+  _parseTextResponse(stdout) {
+    // Очищаем от служебных символов и лишних пробелов
+    let result = stdout.trim();
+
+    // Удаляем возможные ANSI escape последовательности (цвета, форматирование)
+    // eslint-disable-next-line no-control-regex
+    result = result.replace(/\x1b\[[0-9;]*m/g, '');
+
+    // Удаляем строки с прогресс-барами (если есть)
+    result = result.replace(/\r[^\n]*/g, '\n');
+
+    // Нормализуем множественные переносы строк
+    result = result.replace(/\n{3,}/g, '\n\n');
+
+    logger.debug({ resultLength: result.length }, 'Parsed text response');
+
+    return result || 'Qwen вернул пустой ответ';
+  }
+
+  /**
+   * Парсинг JSON ответа от Qwen (устаревший метод, для обратной совместимости)
    * @param {string} stdout - JSON строка от Qwen
    * @returns {string} Извлечённый текст ответа
    * @private
