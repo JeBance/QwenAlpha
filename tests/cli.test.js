@@ -31,7 +31,7 @@ describe('CLI', () => {
     it('должен показывать ошибку без токена', () => {
       assert.throws(
         () => execSync(`node ${binPath}`, { encoding: 'utf-8', stdio: 'pipe' }),
-        /exit code 1/
+        /Token|token|Ошибка/
       );
     });
   });
