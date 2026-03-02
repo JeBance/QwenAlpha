@@ -48,6 +48,9 @@ async function startBot(options = {}) {
     // Запуск в режиме polling
     await bot.launch();
 
+    // Небольшая задержка для завершения инициализации
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     logger.info('Bot launched successfully');
 
     // Отправка уведомления администратору о запуске
