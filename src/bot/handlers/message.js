@@ -211,8 +211,16 @@ function splitMessage(text, maxLength) {
  * @returns {string} HTML текст
  */
 function markdownToHtml(text) {
+  let html = text;
+
+  // Заголовки обрабатываем ДО экранирования
+  // ### Заголовок → <b>📌 Заголовок</b>\n
+  html = html.replace(/^###\s+(.+)$/gm, '<b>📌 $1</b>');
+  html = html.replace(/^##\s+(.+)$/gm, '<b>🔹 $1</b>');
+  html = html.replace(/^#\s+(.+)$/gm, '<b>🔸 $1</b>');
+
   // Сначала экранируем HTML-спецсимволы
-  let html = text
+  html = html
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
@@ -230,11 +238,6 @@ function markdownToHtml(text) {
 
   // Курсив *text* → <i>text</i>
   html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
-
-  // Заголовки # text → <b>text</b>
-  html = html.replace(/^#\s+(.+)$/gm, '<b>$1</b>');
-  html = html.replace(/^##\s+(.+)$/gm, '<b>$1</b>');
-  html = html.replace(/^###\s+(.+)$/gm, '<b>$1</b>');
 
   // Ссылки [text](url) → <a href="url">text</a>
   html = html.replace(/\[([^\]]+)]\(([^)]+)\)/g, '<a href="$2">$1</a>');
