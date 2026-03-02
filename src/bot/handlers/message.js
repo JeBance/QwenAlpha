@@ -114,8 +114,11 @@ async function messageHandler(ctx) {
     const chunks = splitMessage(responseText, maxMessageLength);
 
     for (let i = 0; i < chunks.length; i++) {
+      // Предварительная обработка Markdown от Qwen
+      let markdownText = preprocessMarkdown(chunks[i]);
+      
       // Qwen отправляет готовый Markdown — отправляем как есть
-      await ctx.reply(chunks[i], {
+      await ctx.reply(markdownText, {
         parse_mode: 'Markdown',
         reply_parameters: { message_id: ctx.message.message_id },
       });
@@ -165,6 +168,28 @@ async function messageHandler(ctx) {
 
     statsService.incrementError();
   }
+}
+
+/**
+ * Предварительная обработка Markdown от Qwen
+ * Конвертирует неподдерживаемые Telegram элементы
+ * @param {string} text - Markdown текст
+ * @returns {string} Обработанный текст
+ */
+function preprocessMarkdown(text) {
+  let processed = text;
+  
+  // Заголовки → жирный текст с emoji
+  processed = processed.replace(/^#####\s+(.+)$/gm, '**📌 $1**');
+  processed = processed.replace(/^####\s+(.+)$/gm, '**📌 $1**');
+  processed = processed.replace(/^###\s+(.+)$/gm, '**🔹 $1**');
+  processed = processed.replace(/^##\s+(.+)$/gm, '**🔸 $1**');
+  processed = processed.replace(/^#\s+(.+)$/gm, '**🔸 $1**');
+  
+  // Цитаты > текст → обычный текст (без >)
+  processed = processed.replace(/^>\s*/gm, '');
+  
+  return processed;
 }
 
 /**
