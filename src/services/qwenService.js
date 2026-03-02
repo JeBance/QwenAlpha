@@ -32,7 +32,7 @@ class QwenService {
       return '';
     }
     // Экранирование специальных символов
-    return str.replace(/'/g, '\'\\\'\'').replace(/"/g, '\\"').replace(/`/g, '\\`');
+    return str.replace(/'/g, "'\\''").replace(/"/g, '\\"').replace(/`/g, '\\`');
   }
 
   /**
