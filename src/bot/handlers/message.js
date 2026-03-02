@@ -114,11 +114,11 @@ async function messageHandler(ctx) {
     const chunks = splitMessage(responseText, maxMessageLength);
 
     for (let i = 0; i < chunks.length; i++) {
-      // Определяем тип форматирования
-      const parseMode = determineParseMode(chunks[i]);
+      // Конвертируем Markdown в HTML для Telegram
+      const htmlText = markdownToHtml(chunks[i]);
 
-      await ctx.reply(chunks[i], {
-        parse_mode: parseMode,
+      await ctx.reply(htmlText, {
+        parse_mode: 'HTML',
         reply_parameters: { message_id: ctx.message.message_id },
       });
     }
@@ -206,23 +206,40 @@ function splitMessage(text, maxLength) {
 }
 
 /**
- * Определение режима парсинга для сообщения
- * @param {string} text - Текст сообщения
- * @returns {'Markdown' | undefined} Режим парсинга
+ * Конвертация Markdown в HTML для Telegram
+ * @param {string} text - Markdown текст
+ * @returns {string} HTML текст
  */
-function determineParseMode(text) {
-  // Проверяем наличие Markdown-элементов
-  const hasMarkdownElements =
-    /(^|\s)#[^\s#]/.test(text) || // Заголовки #
-    /\*\*[^*]+\*\*/.test(text) || // Жирный **text**
-    /\*[^*]+\*/.test(text) || // Курсив *text*
-    /`[^`]+`/.test(text) || // Код `code`
-    /```[\s\S]*```/.test(text) || // Блок кода ```code```
-    /^\s*[-*+]\s/.test(text) || // Списки
-    /^\s*\d+\.\s/.test(text) || // Нумерованные списки
-    /\[([^\]]+)]/.test(text); // Ссылки [text]
+function markdownToHtml(text) {
+  // Сначала экранируем HTML-спецсимволы
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 
-  return hasMarkdownElements ? 'Markdown' : undefined;
+  // Блоки кода ```code``` → <pre><code>code</code></pre>
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;
+  });
+
+  // Inline код `code` → <code>code</code>
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Жирный **text** → <b>text</b>
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+
+  // Курсив *text* → <i>text</i>
+  html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
+
+  // Заголовки # text → <b>text</b>
+  html = html.replace(/^#\s+(.+)$/gm, '<b>$1</b>');
+  html = html.replace(/^##\s+(.+)$/gm, '<b>$1</b>');
+  html = html.replace(/^###\s+(.+)$/gm, '<b>$1</b>');
+
+  // Ссылки [text](url) → <a href="url">text</a>
+  html = html.replace(/\[([^\]]+)]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  return html;
 }
 
 module.exports = messageHandler;
