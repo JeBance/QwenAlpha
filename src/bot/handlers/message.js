@@ -114,14 +114,11 @@ async function messageHandler(ctx) {
     const chunks = splitMessage(responseText, maxMessageLength);
 
     for (let i = 0; i < chunks.length; i++) {
-      // Конвертируем Markdown в HTML для Telegram
-      let htmlText = markdownToHtml(chunks[i]);
-      
-      // Очищаем от битых тегов
-      htmlText = sanitizeHtml(htmlText);
+      // Экранируем спецсимволы для Telegram MarkdownV2
+      const markdownText = escapeMarkdownV2(chunks[i]);
 
-      await ctx.reply(htmlText, {
-        parse_mode: 'HTML',
+      await ctx.reply(markdownText, {
+        parse_mode: 'MarkdownV2',
         reply_parameters: { message_id: ctx.message.message_id },
       });
     }
@@ -170,6 +167,16 @@ async function messageHandler(ctx) {
 
     statsService.incrementError();
   }
+}
+
+/**
+ * Экранирование спецсимволов для Telegram MarkdownV2
+ * @param {string} text - Текст для экранирования
+ * @returns {string} Экранированный текст
+ */
+function escapeMarkdownV2(text) {
+  // Символы, которые нужно экранировать в MarkdownV2: _ * [ ] ( ) ~ ` > # + - = | { } . ! \
+  return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 /**
@@ -282,137 +289,6 @@ function splitMessage(text, maxLength) {
   }
 
   return chunks;
-}
-
-/**
- * Очистка HTML от битых тегов перед отправкой в Telegram
- * @param {string} html - HTML текст
- * @returns {string} Очищенный HTML
- */
-function sanitizeHtml(html) {
-  let cleaned = html;
-  
-  // Удаляем незакрытые теги <code> которые встречаются в тексте
-  // Например: "в блоках \<code>\</code>" → "в блоках <code></code>"
-  cleaned = cleaned.replace(/\\<code>/g, '<code>');
-  cleaned = cleaned.replace(/\\<\/code>/g, '</code>');
-  cleaned = cleaned.replace(/\\<pre>/g, '<pre>');
-  cleaned = cleaned.replace(/\\<\/pre>/g, '</pre>');
-  
-  // Исправляем двойное экранирование &amp;lt; → &lt;
-  cleaned = cleaned.replace(/&amp;lt;/g, '&lt;');
-  cleaned = cleaned.replace(/&amp;gt;/g, '&gt;');
-  cleaned = cleaned.replace(/&amp;amp;/g, '&amp;');
-  
-  // Удаляем битые теги, которые не закрываются
-  // Считаем открывающие и закрывающие теги
-  const tagCounts = {};
-  const openTags = cleaned.match(/<(b|i|u|s|code|pre|a|blockquote)(?:\s[^>]*)?>/g) || [];
-  const closeTags = cleaned.match(/<\/(b|i|u|s|code|pre|a|blockquote)>/g) || [];
-  
-  // Считаем баланс
-  for (const tag of openTags) {
-    const match = tag.match(/<(b|i|u|s|code|pre|a|blockquote)/);
-    if (match) {
-      const tagName = match[1];
-      tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
-    }
-  }
-  for (const tag of closeTags) {
-    const match = tag.match(/<\/(b|i|u|s|code|pre|a|blockquote)>/);
-    if (match) {
-      const tagName = match[1];
-      tagCounts[tagName] = (tagCounts[tagName] || 0) - 1;
-    }
-  }
-  
-  // Если есть незакрытые теги — удаляем их
-  for (const [tagName, count] of Object.entries(tagCounts)) {
-    if (count > 0) {
-      // Есть незакрытые открывающие теги — удаляем лишние
-      for (let i = 0; i < count; i++) {
-        cleaned = cleaned.replace(new RegExp(`<${tagName}(?:\\s[^>]*)?>`), '');
-      }
-    } else if (count < 0) {
-      // Есть лишние закрывающие теги — удаляем
-      for (let i = 0; i < Math.abs(count); i++) {
-        cleaned = cleaned.replace(new RegExp(`</${tagName}>`), '');
-      }
-    }
-  }
-  
-  return cleaned;
-}
-
-/**
- * Конвертация Markdown в HTML для Telegram
- * @param {string} text - Markdown текст
- * @returns {string} HTML текст
- */
-function markdownToHtml(text) {
-  let html = text;
-
-  // Заголовки обрабатываем ПЕРВЫМИ (до экранирования)
-  // ### Заголовок → <b>📌 Заголовок</b>\n
-  html = html.replace(/^###\s+(.+)$/gm, '<b>📌 $1</b>');
-  html = html.replace(/^##\s+(.+)$/gm, '<b>🔹 $1</b>');
-  html = html.replace(/^#\s+(.+)$/gm, '<b>🔸 $1</b>');
-
-  // Блоки кода ```code``` → <pre><code>code</code></pre> (до экранирования)
-  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
-    // Экранируем код внутри блока
-    const escapedCode = code
-      .trim()
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return `<pre><code class="language-${lang || 'text'}">${escapedCode}</code></pre>`;
-  });
-
-  // Inline код `code` → <code>code</code> (до экранирования)
-  html = html.replace(/`([^`]+)`/g, (match, code) => {
-    const escapedCode = code
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return `<code>${escapedCode}</code>`;
-  });
-
-  // Цитаты > text → <blockquote>text</blockquote> (до экранирования)
-  html = html.replace(/^>\s*(.+)$/gm, '<blockquote>$1</blockquote>');
-
-  // Теперь экранируем ВСЁ, кроме уже созданных HTML-тегов
-  // Временная замена тегов
-  const tempTags = [];
-  let tagIndex = 0;
-
-  // Сохраняем теги (добавили blockquote)
-  html = html.replace(/<(\/?)(b|i|u|s|code|pre|a|span|blockquote)[^>]*>/g, (match) => {
-    tempTags.push(match);
-    return `%%TAG${tagIndex++}%%`;
-  });
-
-  // Экранируем спецсимволы
-  html = html
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // Восстанавливаем теги
-  tempTags.forEach((tag, index) => {
-    html = html.replace(`%%TAG${index}%%`, tag);
-  });
-
-  // Жирный **text** → <b>text</b>
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
-
-  // Курсив *text* → <i>text</i>
-  html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
-
-  // Ссылки [text](url) → <a href="url">text</a>
-  html = html.replace(/\[([^\]]+)]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  return html;
 }
 
 module.exports = messageHandler;
