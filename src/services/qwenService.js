@@ -75,16 +75,17 @@ class QwenService {
     }
 
     // Формирование промпта с контекстом
-    let fullPrompt = code;
-
+    let fullPrompt = '';
+    
     if (contextMessages && contextMessages.length > 0) {
       // Добавляем контекст диалога
       const contextText = contextMessages
         .map((msg) => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
         .join('\n');
-
-      // Явно указываем что это продолжение диалога
-      fullPrompt = `Продолжи диалог. Контекст:\n${contextText}\n\nUser: ${code}`;
+      
+      fullPrompt = `${contextText}\n\nUser: ${code}\n\nAssistant:`;
+    } else {
+      fullPrompt = `Проанализируй код и дай рекомендации:\n\n${code}`;
     }
 
     // Создаём временный файл с промптом
@@ -95,20 +96,10 @@ class QwenService {
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
     // Запускаем Qwen через execSync с правильной командой
-    const args = ['-o', 'json'];
-    if (contextMessages.length === 0) {
-      args.unshift('-p', 'Проанализируй код и дай рекомендации');
-    }
-
-    logger.debug(
-      { codeLength: code.length, contextLength: contextMessages.length, tempFile, args },
-      'Running Qwen analysis'
-    );
+    // Используем позиционный аргумент (stdin) вместо -p флага
+    const command = `cat '${tempFile}' | /usr/local/bin/qwen -o json`;
 
     try {
-      // Формируем команду: cat file | qwen -p "..." -o json
-      const command = `cat '${tempFile}' | /usr/local/bin/qwen ${args.join(' ')}`;
-      
       const stdout = execSync(command, {
         timeout: config.qwen.timeout,
         maxBuffer: config.qwen.maxBuffer,
@@ -116,11 +107,7 @@ class QwenService {
       }).toString();
 
       // Удаляем временный файл
-      try {
-        fs.unlinkSync(tempFile);
-      } catch (e) {
-        /* ignore */
-      }
+      try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
 
       // Парсинг JSON ответа
       const parsedResult = this._parseJsonResponse(stdout);
