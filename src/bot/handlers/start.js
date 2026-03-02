@@ -1,5 +1,6 @@
 const sessionService = require('../../services/db/sessions');
 const statsService = require('../../services/db/stats');
+const { systemPromptService } = require('../../services/db/systemPrompt');
 const { logger } = require('../../utils/logger');
 
 /**
@@ -15,19 +16,50 @@ async function startHandler(ctx) {
   // Регистрация супер-админа если первый
   const isNewSuperAdmin = ctx.state.isSuperAdmin;
 
+  // Инициализация системного промпта при первом запуске
+  systemPromptService.init();
+
   if (isNewSuperAdmin) {
     logger.info({ userId }, 'Super admin registered via /start');
 
-    await ctx.reply(
-      '🎉 **Поздравляю! Вы — первый пользователь и супер-администратор Qwen Alpha!**\n\n' +
-        'Теперь вы можете:\n' +
-        '• Управлять другими администраторами через /admin\n' +
-        '• Настраивать бота через /settings\n' +
-        '• Просматривать статистику через /stats\n\n' +
-        '📚 Документация: https://github.com/JeBance/QwenAlpha\n\n' +
-        'Для начала работы отправьте мне код или напишите /help',
-      { parse_mode: 'Markdown' }
-    );
+    const welcomeMessage = `
+🎉 **Поздравляю! Вы — первый пользователь и супер-администратор Qwen Alpha!**
+
+👑 **Ваши привилегии:**
+• Полный доступ ко всем функциям бота
+• Управление другими администраторами
+• Настройка системного промпта
+• Просмотр статистики и логов
+
+📋 **Что делать дальше:**
+
+**1. Настройте системный промпт** (опционально):
+/setSystemPrompt <ваш промпт>
+
+Пример для консультанта:
+/setSystemPrompt Ты — консультант магазина электроники. Отвечай кратко, предлагай товары.
+
+**2. Просмотрите инструкции:**
+/instructions — Полная справка по настройке
+
+**3. Добавьте администраторов** (опционально):
+/admin add <user_id>
+
+**4. Начните использовать:**
+• Отправьте код для анализа
+• Задайте вопрос по программированию
+• Используйте /help для списка команд
+
+🔗 **Репозиторий:** https://github.com/JeBance/QwenAlpha
+📝 **Документация:** https://github.com/JeBance/QwenAlpha#readme
+
+Для начала работы отправьте мне код или напишите /help
+    `.trim();
+
+    await ctx.reply(welcomeMessage, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
+    });
 
     return;
   }
@@ -42,6 +74,7 @@ async function startHandler(ctx) {
       '  • Рефакторинг и оптимизация\n\n' +
       '📤 Отправь мне код текстом или файлом, и я проанализирую его!\n\n' +
       'ℹ️ /help — список команд\n' +
+      '📖 /instructions — инструкции по настройке\n' +
       '📊 /stats — ваша статистика\n' +
       '⚙️ /settings — настройки',
   ];

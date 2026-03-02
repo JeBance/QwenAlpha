@@ -15,6 +15,23 @@ class SystemPromptService {
   }
 
   /**
+   * Инициализация системного промпта (при первом запуске)
+   * @returns {void}
+   */
+  init() {
+    try {
+      const data = this._store.getData();
+      if (!data.system_prompt) {
+        data.system_prompt = DEFAULT_SYSTEM_PROMPT;
+        this._store.setData(data);
+        logger.info('System prompt initialized with default value');
+      }
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize system prompt');
+    }
+  }
+
+  /**
    * Получение текущего системного промпта
    * @returns {string} Системный промпт
    */
@@ -64,7 +81,7 @@ class SystemPromptService {
    */
   isCustom() {
     const data = this._store.getData();
-    return !!data.system_prompt;
+    return !!data.system_prompt && data.system_prompt !== DEFAULT_SYSTEM_PROMPT;
   }
 }
 

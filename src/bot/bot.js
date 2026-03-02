@@ -21,6 +21,7 @@ const {
   getSystemPromptHandler,
   resetSystemPromptHandler,
 } = require('./handlers/systemPrompt');
+const { instructionsHandler } = require('./handlers/instructions');
 
 /**
  * Инициализация Telegraf бота
@@ -71,6 +72,7 @@ async function initBot(token) {
   bot.command('setSystemPrompt', setSystemPromptHandler);
   bot.command('getSystemPrompt', getSystemPromptHandler);
   bot.command('resetSystemPrompt', resetSystemPromptHandler);
+  bot.command('instructions', instructionsHandler);
 
   // Сообщения
   bot.on(message('text'), messageHandler);
