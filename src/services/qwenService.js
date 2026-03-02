@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -40,34 +40,17 @@ class QwenService {
    * @returns {Promise<boolean>} true если Qwen доступен
    */
   async checkAvailability() {
-    return new Promise((resolve) => {
-      const child = spawn('qwen', ['--version'], {
+    try {
+      const stdout = execSync('/usr/local/bin/qwen --version', {
+        timeout: 5000,
         stdio: ['ignore', 'pipe', 'ignore'],
-      });
-
-      let stdout = '';
-      child.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      child.on('close', (code) => {
-        if (code === 0) {
-          logger.info({ version: stdout.trim() }, 'Qwen Code available');
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      });
-
-      child.on('error', () => {
-        resolve(false);
-      });
-
-      setTimeout(() => {
-        child.kill();
-        resolve(false);
-      }, 5000);
-    });
+      }).toString();
+      logger.info({ version: stdout.trim() }, 'Qwen Code available');
+      return true;
+    } catch (error) {
+      logger.warn({ error: error.message }, 'Qwen Code not available');
+      return false;
+    }
   }
 
   /**
@@ -123,74 +106,21 @@ class QwenService {
     );
 
     try {
-      const result = await new Promise((resolve, reject) => {
-        const child = spawn('/usr/local/bin/qwen', args, {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env },
-        });
+      // Используем execSync с cat для передачи файла
+      const command = `cat '${tempFile}' | /usr/local/bin/qwen ${args.join(' ')}`;
+      
+      const stdout = execSync(command, {
+        timeout: config.qwen.timeout,
+        maxBuffer: config.qwen.maxBuffer,
+        env: { ...process.env },
+      }).toString();
 
-        let stdout = '';
-        let stderr = '';
-
-        // Читаем файл и передаём в stdin
-        const fileStream = fs.createReadStream(tempFile);
-        fileStream.pipe(child.stdin);
-        
-        // Закрываем stdin после записи чтобы Qwen знал что ввод закончен
-        fileStream.on('end', () => {
-          child.stdin.end();
-        });
-
-        child.stdout.on('data', (data) => {
-          stdout += data.toString();
-        });
-
-        child.stderr.on('data', (data) => {
-          stderr += data.toString();
-          logger.debug({ stderr: data.toString().trim() }, 'Qwen stderr');
-        });
-
-        child.on('close', (code) => {
-          logger.debug({ code, stdout: stdout.substring(0, 200), stderr }, 'Qwen closed');
-          
-          // Удаляем временный файл
-          try {
-            fs.unlinkSync(tempFile);
-          } catch (e) {
-            /* ignore */
-          }
-
-          if (code !== 0) {
-            reject(new Error(`Qwen exited with code ${code}: ${stderr}`));
-          } else {
-            resolve(stdout);
-          }
-        });
-
-        child.on('error', (err) => {
-          try {
-            fs.unlinkSync(tempFile);
-          } catch (e) {
-            /* ignore */
-          }
-          reject(err);
-        });
-
-        // Таймаут
-        const timeoutId = setTimeout(() => {
-          child.kill('SIGTERM');
-          try {
-            fs.unlinkSync(tempFile);
-          } catch (e) {
-            /* ignore */
-          }
-          reject(new Error('Qwen timeout'));
-        }, config.qwen.timeout);
-
-        child.on('close', () => clearTimeout(timeoutId));
-      });
-
-      const stdout = result;
+      // Удаляем временный файл
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        /* ignore */
+      }
 
       // Парсинг JSON ответа
       const parsedResult = this._parseJsonResponse(stdout);
