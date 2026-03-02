@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -95,56 +95,68 @@ class QwenService {
     );
     fs.writeFileSync(tempFile, fullPrompt, 'utf-8');
 
-    // Запускаем Qwen через execSync с правильной командой
-    // Используем позиционный аргумент (stdin) вместо -p флага
-    const command = `cat '${tempFile}' | /usr/local/bin/qwen -o json`;
-
-    try {
-      const stdout = execSync(command, {
-        timeout: config.qwen.timeout,
-        maxBuffer: config.qwen.maxBuffer,
+    // Запускаем Qwen через spawn с правильной обработкой stdin
+    return new Promise((resolve, reject) => {
+      const child = spawn('/usr/local/bin/qwen', ['-o', 'json'], {
         env: { ...process.env },
-      }).toString();
+      });
 
-      // Удаляем временный файл
-      try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
 
-      // Парсинг JSON ответа
-      const parsedResult = this._parseJsonResponse(stdout);
+      // Таймаут
+      const timeoutId = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGTERM');
+        reject(new Error('Qwen timeout'));
+      }, config.qwen.timeout);
 
-      const duration = Date.now() - startTime;
-      logger.info({ duration, resultLength: parsedResult.length }, 'Qwen analysis completed');
+      // Записываем промпт в stdin
+      child.stdin.write(fullPrompt);
+      child.stdin.end();
 
-      return parsedResult;
-    } catch (error) {
-      // Удаляем временный файл при ошибке
-      try {
-        fs.unlinkSync(tempFile);
-      } catch (e) {
-        /* ignore */
-      }
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
 
-      logger.error({ error }, 'Qwen analysis failed');
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+        logger.debug({ stderr: data.toString().trim() }, 'Qwen stderr');
+      });
 
-      // Обработка различных типов ошибок
-      if (error.killed && error.signal === 'SIGTERM') {
-        throw new QwenError(
-          'Анализ прерван по таймауту. Попробуйте с меньшим файлом.',
-          error,
-          'TIMEOUT'
-        );
-      }
+      child.on('close', (code) => {
+        clearTimeout(timeoutId);
+        
+        // Удаляем временный файл
+        try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
 
-      if (error.message.includes('maxBuffer')) {
-        throw new QwenError(
-          'Ответ слишком большой. Попробуйте меньший фрагмент кода.',
-          error,
-          'BUFFER_EXCEEDED'
-        );
-      }
+        if (timedOut) {
+          reject(new QwenError('Анализ прерван по таймауту', null, 'TIMEOUT'));
+          return;
+        }
 
-      throw new QwenError(`Ошибка Qwen Code: ${error.message}`, error, 'QWEN_ERROR');
-    }
+        if (code !== 0) {
+          logger.error({ code, stderr }, 'Qwen exited with error');
+          reject(new QwenError(`Qwen error: ${stderr}`, null, 'QWEN_ERROR'));
+          return;
+        }
+
+        // Парсинг JSON ответа
+        const parsedResult = this._parseJsonResponse(stdout);
+
+        const duration = Date.now() - startTime;
+        logger.info({ duration, resultLength: parsedResult.length }, 'Qwen analysis completed');
+
+        resolve(parsedResult);
+      });
+
+      child.on('error', (err) => {
+        clearTimeout(timeoutId);
+        try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ }
+        reject(err);
+      });
+    });
   }
 
   /**
