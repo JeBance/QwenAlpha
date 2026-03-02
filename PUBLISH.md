@@ -1,12 +1,15 @@
-# 🚀 Инструкция по публикации и запуску Qwen Alpha
+# 🚀 Инструкция по публикации и запуску Qwen Alpha v2.0
 
 ## ✅ Чек-лист перед публикацией
 
 - [ ] Все зависимости установлены (`npm install`)
 - [ ] Тесты проходят (`npm test`)
 - [ ] Линтинг проходит (`npm run lint`)
+- [ ] Форматирование в порядке (`npm run format:check`)
 - [ ] README.md актуален
-- [ ] Version в package.json обновлён
+- [ ] CHANGELOG.md обновлён
+- [ ] Version в package.json обновлён (2.0.0)
+- [ ] .env.example актуален
 
 ---
 
@@ -30,7 +33,7 @@ npm pkg get
 npm pack --dry-run
 
 # Просмотр содержимого .tgz
-tar -tzf qwen-alpha-1.0.0.tgz
+tar -tzf qwen-alpha-2.0.0.tgz
 ```
 
 ### 3. Публикация
@@ -39,8 +42,8 @@ tar -tzf qwen-alpha-1.0.0.tgz
 # Публикация стабильной версии
 npm publish
 
-# Публикация beta версии (не затронет latest)
-npm publish --tag beta
+# Публикация с тегом latest (явно)
+npm publish --tag latest
 ```
 
 ### 4. Проверка публикации
@@ -59,7 +62,7 @@ npm view qwen-alpha
 ### 1. Глобальная установка
 
 ```bash
-npm install -g qwen-alpha
+npm install -g qwen-alpha@2.0.0
 ```
 
 ### 2. Проверка CLI
@@ -85,9 +88,7 @@ qwen-alpha --token <YOUR_BOT_TOKEN>
 
 ---
 
-## 🔄 Обновление версии
-
-### SemVer (Semantic Versioning)
+## 🔄 Обновление версии (SemVer)
 
 ```
 MAJOR.MINOR.PATCH
@@ -100,16 +101,16 @@ MAJOR.MINOR.PATCH
 ### Команды для обновления версии
 
 ```bash
-# Исправление багов (1.0.0 → 1.0.1)
+# Исправление багов (2.0.0 → 2.0.1)
 npm version patch
 
-# Новые функции (1.0.0 → 1.1.0)
+# Новые функции (2.0.0 → 2.1.0)
 npm version minor
 
-# Ломающие изменения (1.0.0 → 2.0.0)
+# Ломающие изменения (2.0.0 → 3.0.0)
 npm version major
 
-# Pre-release версии (1.0.0 → 1.0.1-beta.0)
+# Pre-release версии (2.0.0 → 2.0.1-beta.0)
 npm version prerelease --preid=beta
 ```
 
@@ -187,10 +188,19 @@ npm-views qwen-alpha
    - Или через переменную окружения `BOT_TOKEN`
 
 3. **npm audit**
+
    ```bash
    npm audit
    npm audit fix
    ```
+
+4. **Проверка .gitignore**
+
+   ```bash
+   cat .gitignore
+   ```
+
+   Должны быть: `node_modules/`, `.env`, `*.log`, `~/.qwen-alpha/`
 
 ---
 
@@ -214,40 +224,85 @@ qwen-alpha --token <TOKEN> --log-level debug
 qwen-alpha --token <TOKEN> --allowed-users 123456789,987654321
 ```
 
-### Через Docker (пример)
+### Через переменную окружения
 
-```dockerfile
-FROM node:18-alpine
-RUN npm install -g qwen-alpha @qwen-code/qwen-code
-CMD ["qwen-alpha", "--token", "$BOT_TOKEN"]
+```bash
+export BOT_TOKEN=your_token_here
+qwen-alpha --token $BOT_TOKEN
 ```
 
 ---
 
-## 🎯 Следующие шаги после публикации
+## 🎯 Настройка v2.0 после установки
 
-1. **Добавить бота в Telegram**
-   - Откройте https://t.me/BotFather
-   - Создайте нового бота если ещё не создан
-   - Получите токен
+### 1. Первый запуск
 
-2. **Настроить бота**
-   - Установите аватар (логотип)
-   - Настройте description и about
+```bash
+qwen-alpha --token <TOKEN>
+```
 
-3. **Протестировать функционал**
-   - `/start` — приветствие
-   - `/help` — справка
-   - Отправить код на анализ
+Бот автоматически:
 
-4. **Добавить в группы** (опционально)
-   - Добавьте бота в группу
-   - Проверьте работу `/qwen` команд
+- Инициализирует хранилище `~/.qwen-alpha/`
+- Создаст системный промпт по умолчанию
+- Зарегистрирует первого пользователя как супер-админа
 
-5. **Мониторинг**
-   - Следите за логами в `~/.qwen-alpha/logs/`
-   - Проверяйте `/admin stats`
+### 2. Настройка системного промпта
+
+В Telegram (супер-админ):
+
+```
+/setSystemPrompt Ты — консультант магазина электроники. Ассортимент: телевизоры, холодильники. Отвечай кратко.
+```
+
+### 3. Проверка промпта
+
+```
+/getSystemPrompt
+```
+
+### 4. Инструкции
+
+```
+/instructions
+```
+
+### 5. Добавление администраторов
+
+```
+/admin add <user_id>
+```
 
 ---
 
-**Удачи с публикацией! 🚀**
+## 📚 Документация v2.0
+
+### Новые возможности
+
+- **Системные промпты** — кастомизация поведения бота
+- **Команда `/instructions`** — подробные инструкции
+- **Система безопасности** — защита от опасных запросов
+- **Фильтрация ответов** — скрытие чувствительной информации
+- **HTML-форматирование** — стабильная работа с Telegram
+
+### Сценарии использования
+
+| Сценарий             | Пример промпта                                |
+| -------------------- | --------------------------------------------- |
+| Консультант магазина | `Ты — консультант магазина электроники...`    |
+| Техподдержка         | `Ты — техподдержка CRM-системы...`            |
+| Юридический бот      | `Ты — юридический консультант по праву РФ...` |
+| AI-ассистент кода    | `Ты — AI-ассистент для работы с кодом...`     |
+
+---
+
+## 🔗 Ссылки
+
+- **Репозиторий**: https://github.com/JeBance/QwenAlpha
+- **NPM**: https://www.npmjs.com/package/qwen-alpha
+- **Issues**: https://github.com/JeBance/QwenAlpha/issues
+- **CHANGELOG**: https://github.com/JeBance/QwenAlpha/blob/main/CHANGELOG.md
+
+---
+
+**Удачи с публикацией v2.0! 🚀**

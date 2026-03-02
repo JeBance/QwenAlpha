@@ -1,10 +1,10 @@
-# Qwen Alpha
+# Qwen Alpha v2.0
 
 [![CI](https://github.com/JeBance/QwenAlpha/actions/workflows/ci.yml/badge.svg)](https://github.com/JeBance/QwenAlpha/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/qwen-alpha.svg)](https://www.npmjs.com/package/qwen-alpha)
 [![license](https://img.shields.io/npm/l/qwen-alpha.svg)](https://github.com/JeBance/QwenAlpha/blob/main/LICENSE)
 
-**Telegram бот для работы с Qwen Code** — AI-powered code review, генерация кода и анализ прямо в Telegram.
+**Qwen Alpha** — универсальный Telegram-бот на базе Qwen Code с поддержкой кастомных системных промптов. Превратите бота в консультанта магазина, техподдержку, юридического советника или AI-ассистента для работы с кодом.
 
 ---
 
@@ -13,7 +13,7 @@
 ### Установка
 
 ```bash
-npm install -g qwen-alpha
+npm install -g qwen-alpha@2.0.0
 ```
 
 ### Требования
@@ -37,9 +37,9 @@ qwen-alpha --token $BOT_TOKEN
 
 ---
 
-## 📋 Возможности
+## 📋 Возможности v2.0
 
-### Для пользователей
+### Для всех пользователей
 
 | Функция              | Описание                                  |
 | -------------------- | ----------------------------------------- |
@@ -49,24 +49,52 @@ qwen-alpha --token $BOT_TOKEN
 | **Рефакторинг**      | Улучшение читаемости и производительности |
 | **Работа с файлами** | Анализ файлов с кодом (до 2MB)            |
 | **Контекст диалога** | Бот помнит историю обсуждения             |
+| **Безопасность**     | Защита от опасных запросов                |
 
-### Команды бота
+### Для супер-админа
 
-| Команда     | Описание                   |
-| ----------- | -------------------------- |
-| `/start`    | Запуск бота и приветствие  |
-| `/help`     | Список команд и информация |
-| `/reset`    | Сброс текущей сессии       |
-| `/stats`    | Статистика пользователя    |
-| `/settings` | Настройки бота             |
-| `/admin`    | Панель администратора      |
+| Функция                 | Описание                                 |
+| ----------------------- | ---------------------------------------- |
+| **Системный промпт**    | Настройка поведения бота под свои задачи |
+| **Управление админами** | Добавление/удаление администраторов      |
+| **Просмотр промпта**    | Просмотр текущего системного промпта     |
+| **Сброс промпта**       | Возврат к промпту по умолчанию           |
 
-### Для групповых чатов
+### Сценарии использования
 
-- **Начало сессии**: `/qwen <запрос>` или `@QwenAlphaRobot <запрос>`
-- **Продолжение**: ответ (reply) на сообщение из сессии
-- **Контекст**: бот помнит всю цепочку обсуждения
-- **Изоляция**: каждая тема — отдельная сессия
+| Сценарий                 | Пример промпта                                                                                                    |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **Консультант магазина** | `Ты — консультант магазина электроники. Ассортимент: телевизоры, холодильники. Отвечай кратко, предлагай товары.` |
+| **Техподдержка**         | `Ты — техподдержка CRM-системы. Тарифы: Старт (990₽), Про (1990₽). Помогай с настройкой.`                         |
+| **Юридический бот**      | `Ты — юридический консультант по праву РФ. Специализация: договоры, ИП, ООО. Отвечай на основе ГК РФ, НК РФ.`     |
+| **AI-ассистент кода**    | `Ты — AI-ассистент для работы с кодом. Анализируй код, ищи баги, предлагай улучшения.`                            |
+
+---
+
+## 📖 Команды бота
+
+### Основные команды
+
+| Команда         | Описание                          |
+| --------------- | --------------------------------- |
+| `/start`        | Запуск бота и приветствие         |
+| `/help`         | Список команд и информация        |
+| `/instructions` | Подробные инструкции по настройке |
+| `/reset`        | Сброс текущей сессии              |
+| `/stats`        | Статистика пользователя           |
+| `/settings`     | Настройки бота                    |
+
+### Команды супер-админа
+
+| Команда                    | Описание                     |
+| -------------------------- | ---------------------------- |
+| `/setSystemPrompt <промт>` | Установить системный промпт  |
+| `/getSystemPrompt`         | Просмотр текущего промпта    |
+| `/resetSystemPrompt`       | Сброс к промпту по умолчанию |
+| `/admin add <user_id>`     | Добавить админа              |
+| `/admin remove <user_id>`  | Удалить админа               |
+| `/admin ban <user_id>`     | Забанить пользователя        |
+| `/admin unban <user_id>`   | Разбанить пользователя       |
 
 ---
 
@@ -92,10 +120,34 @@ qwen-alpha --token <TOKEN> [опции]
 BOT_TOKEN=your_bot_token_here
 LOG_LEVEL=info
 ALLOWED_USERS=123456789,987654321
-QWEN_TIMEOUT=60000
+QWEN_TIMEOUT=300000
 RATE_LIMIT_WINDOW=60000
 RATE_LIMIT_MAX=10
 ```
+
+---
+
+## 🔒 Безопасность
+
+### Защита от опасных запросов
+
+Бот автоматически блокирует запросы, содержащие:
+
+- Выполнение shell-команд (`execute command`, `run shell`)
+- Доступ к файловой системе сервера (`fs.readFile`, `fs.writeFile`)
+- Переменные окружения сервера (`process.env`)
+- Секреты и токены (`BOT_TOKEN`, `API_KEY`, `SECRET`)
+
+### Фильтрация ответов
+
+Для обычных пользователей скрывается:
+
+- Пути к файлам сервера (`/Users/...`, `/home/...`)
+- Токены и API-ключи
+- Переменные окружения
+- Пароли и секреты
+
+**Супер-админ обходит все проверки!**
 
 ---
 
@@ -109,58 +161,102 @@ RATE_LIMIT_MAX=10
 │   ├── users.json       # Пользователи
 │   ├── sessions.json    # Сессии (24ч)
 │   ├── admins.json      # Администраторы
-│   └── stats.json       # Статистика
+│   ├── stats.json       # Статистика
+│   └── settings.json    # Настройки (включая system_prompt)
 ├── logs/
 │   └── qwen-alpha-YYYY-MM-DD.log
 └── config/
-    └── settings.json    # Настройки бота
+    └── settings.json    # Конфигурация бота
 ```
 
 **Важно**: Данные не хранятся в node_modules и не затираются при обновлении.
 
 ---
 
-## 🛡 Администрирование
+## 🏗 Архитектура проекта
 
-### Первый запуск
-
-Первый пользователь, запустивший `/start`, становится **супер-админом**.
-
-### Админ команды
-
-```bash
-# Управление админами
-/admin add <user_id>       # Добавить админа
-/admin remove <user_id>    # Удалить админа
-
-# Управление пользователями
-/admin ban <user_id>       # Забанить
-/admin unban <user_id>     # Разбанить
-
-# Сессии
-/admin sessions list       # Список сессий
-/admin sessions clear <chat_id>  # Очистить чат
-
-# Настройки
-/admin set <key> <value>   # Изменить настройку
-/admin settings            # Показать настройки
-
-# Статистика
-/admin stats               # Подробная статистика
+```
+QwenAlpha/
+├── bin/qwen-alpha.js          # CLI entry point (Commander)
+├── src/
+│   ├── index.js               # Основной экспорт (startBot, stopBot)
+│   ├── bot/
+│   │   ├── bot.js             # Telegraf инициализация
+│   │   ├── middleware/        # logging, rateLimit, session, auth, security
+│   │   └── handlers/          # start, help, reset, stats, settings, admin, message, file, systemPrompt, instructions
+│   ├── services/
+│   │   ├── db/                # JSON хранилище (users, sessions, admins, stats, systemPrompt)
+│   │   └── qwenService.js     # Qwen Code интеграция (headless режим)
+│   ├── config/                # Конфигурация (index.js, security.js)
+│   └── utils/                 # logger (pino), paths (~/.qwen-alpha/)
+├── tests/                     # Тесты (node:test)
+└── package.json               # v2.0.0, dependencies: telegraf, commander, dotenv, pino
 ```
 
-### Настройки бота
+### Поток обработки запроса
 
-| Настройка                    | По умолчанию | Описание                 |
-| ---------------------------- | ------------ | ------------------------ |
-| `session_timeout_hours`      | 24           | Срок жизни сессии (часы) |
-| `max_file_size_mb`           | 2            | Макс. размер файла (MB)  |
-| `requests_per_user_per_hour` | 60           | Лимит запросов/час       |
-| `group_mode`                 | mention      | Режим в группах          |
+```
+1. Пользователь → Telegram → Бот
+2. Middleware: logging → rateLimit → auth → security → session
+3. Handler: messageHandler
+4. qwenService.analyzeCode() + systemPrompt + userId
+5. Qwen Code (headless, -o text)
+6. filterResponse() (скрытие чувствительных данных)
+7. preprocessMarkdown() (заголовки → emoji + жирный)
+8. Telegram → Пользователь
+```
 
 ---
 
-## 🔧 Разработка
+## 🧪 Тесты
+
+```bash
+npm test
+```
+
+Запускает тесты CLI:
+
+- `--help` — проверка справки
+- `--version` — проверка версии
+- Без токена — проверка ошибки
+
+---
+
+## 📝 Примеры использования
+
+### 1. Консультант магазина электроники
+
+```bash
+# Запуск бота
+qwen-alpha --token YOUR_BOT_TOKEN
+
+# В Telegram (супер-админ):
+/setSystemPrompt Ты — консультант магазина электроники "ТехноМир".
+Ассортимент: телевизоры (LG, Samsung, Sony), холодильники, стиральные машины.
+Цены: телевизоры от 15000₽, холодильники от 25000₽.
+Отвечай кратко, предлагай товары, упоминай акции.
+```
+
+### 2. Техподдержка SaaS-платформы
+
+```bash
+/setSystemPrompt Ты — техподдержка CRM-системы "Битрикс24".
+Тарифы: Старт (990₽/мес), Компания (1990₽/мес), Бизнес (3990₽/мес).
+Помогай с настройкой воронок, интеграцией почты, импортом клиентов.
+```
+
+### 3. Юридический консультант
+
+```bash
+/setSystemPrompt Ты — юридический консультант по праву РФ.
+Специализация: договоры, ИП, ООО, налоги, трудовое право.
+Отвечай на основе ГК РФ, НК РФ, ТК РФ.
+Не давай гарантий — рекомендуй очную консультацию.
+```
+
+---
+
+## 🛠 Разработка
 
 ### Установка зависимостей
 
@@ -192,58 +288,54 @@ npm run format:check
 
 ---
 
-## 📊 Структура проекта
+## 📊 История версий
 
-```
-QwenAlpha/
-├── bin/
-│   └── qwen-alpha.js      # CLI entry point
-├── src/
-│   ├── index.js           # Основной экспорт
-│   ├── bot/
-│   │   ├── bot.js         # Telegraf инициализация
-│   │   ├── handlers/      # Обработчики команд
-│   │   └── middleware/    # Middleware
-│   ├── services/
-│   │   ├── db/            # JSON хранилище
-│   │   └── qwenService.js # Qwen Code интеграция
-│   ├── config/            # Конфигурация
-│   └── utils/             # Утилиты
-├── tests/                 # Тесты
-├── .github/workflows/     # CI/CD
-└── package.json
-```
+### v2.0.0 (2026-03-02)
+
+**Новые возможности:**
+
+- ✅ Системные промпты (кастомизация поведения бота)
+- ✅ Команды `/setSystemPrompt`, `/getSystemPrompt`, `/resetSystemPrompt`
+- ✅ Команда `/instructions` — подробные инструкции
+- ✅ Система безопасности (DANGEROUS_PATTERNS, SENSITIVE_PATTERNS)
+- ✅ Middleware для проверки запросов
+- ✅ Фильтрация ответов (скрытие чувствительной информации)
+- ✅ Автоматическая инициализация промпта при первом запуске
+- ✅ Приветствие супер-админа с инструкциями
+- ✅ Передача ID пользователя в Qwen (для проверки прав)
+- ✅ Обработка заголовков Markdown (→ emoji + жирный)
+- ✅ Переход на HTML-форматирование (стабильнее Markdown)
+
+**Исправления:**
+
+- ✅ Исправлены ошибки парсинга Markdown
+- ✅ Исправлено форматирование Prettier
+- ✅ Увеличен таймаут Qwen до 5 минут
+- ✅ Увеличен таймаут Telegraf до 6 минут
+
+### v1.0.20 и ранее
+
+- Базовая функциональность бота
+- Code review, генерация кода, объяснение
+- Сессии и контекст диалога
+- Админ-панель
 
 ---
 
-## 🐛 Решение проблем
+## 🔗 Ссылки
 
-### Qwen Code не установлен
+- **Репозиторий**: https://github.com/JeBance/QwenAlpha
+- **NPM**: https://www.npmjs.com/package/qwen-alpha
+- **Qwen Code**: https://github.com/QwenLM/qwen-code
+- **Issues**: https://github.com/JeBance/QwenAlpha/issues
+- **Telegraf**: https://telegraf.js.org/
 
-```bash
-npm install -g @qwen-code/qwen-code
-```
+---
 
-### Ошибка "Bot token not specified"
+## 📞 Поддержка
 
-Используйте `--token` или установите `BOT_TOKEN`:
-
-```bash
-export BOT_TOKEN=123456789:ABCdef...
-qwen-alpha --token $BOT_TOKEN
-```
-
-### Ошибка доступа к хранилищу
-
-Проверьте права на запись в `~/.qwen-alpha/`:
-
-```bash
-chmod -R 755 ~/.qwen-alpha/
-```
-
-### Бот не отвечает в группах
-
-Проверьте, что бот добавлен в группу и имеет права на чтение сообщений.
+- **Telegram**: [@QwenAlphaRobot](https://t.me/QwenAlphaRobot) (бот)
+- **GitHub Issues**: https://github.com/JeBance/QwenAlpha/issues
 
 ---
 
@@ -253,30 +345,4 @@ chmod -R 755 ~/.qwen-alpha/
 
 ---
 
-## 🔗 Ссылки
-
-- **Репозиторий**: https://github.com/JeBance/QwenAlpha
-- **NPM**: https://www.npmjs.com/package/qwen-alpha
-- **Qwen Code**: https://github.com/QwenLM/qwen-code
-- **Telegraf**: https://telegraf.js.org/
-
----
-
-## 🤝 Вклад в проект
-
-1. Fork репозитория
-2. Создайте ветку (`git checkout -b feature/amazing-feature`)
-3. Закоммитьте изменения (`git commit -m 'Add amazing feature'`)
-4. Отправьте в remote (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
-
----
-
-## 📞 Контакты
-
-- **Telegram**: [@QwenAlphaRobot](https://t.me/QwenAlphaRobot) (бот)
-- **GitHub**: https://github.com/JeBance/QwenAlpha/issues
-
----
-
-**Qwen Alpha** — ваш AI ассистент для работы с кодом в Telegram! 🚀
+**Qwen Alpha v2.0** — универсальная платформа для создания AI-консультантов! 🚀

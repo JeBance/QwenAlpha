@@ -58,7 +58,7 @@ async function startBot(options = {}) {
           `🆔 ID: <code>${botInfo.id}</code>\n` +
           `👤 Username: @${botInfo.username}\n\n` +
           `🕐 Время: ${new Date().toLocaleString('ru-RU')}\n\n` +
-          `Бот готов к работе! 🚀`;
+          'Бот готов к работе! 🚀';
 
         // Сначала отправляем супер-админу
         const superAdmin = allAdmins.find((a) => a.isSuperAdmin);
