@@ -1,4 +1,4 @@
-# Qwen Alpha v2.0
+# Qwen Alpha v2.0.1
 
 [![CI](https://github.com/JeBance/QwenAlpha/actions/workflows/ci.yml/badge.svg)](https://github.com/JeBance/QwenAlpha/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/qwen-alpha.svg)](https://www.npmjs.com/package/qwen-alpha)
@@ -13,7 +13,7 @@
 ### Установка
 
 ```bash
-npm install -g qwen-alpha@2.0.0
+npm install -g qwen-alpha
 ```
 
 ### Требования
@@ -37,7 +37,7 @@ qwen-alpha --token $BOT_TOKEN
 
 ---
 
-## 📋 Возможности v2.0
+## 📋 Возможности v2.0.1
 
 ### Для всех пользователей
 
@@ -290,6 +290,12 @@ npm run format:check
 
 ## 📊 История версий
 
+### v2.0.1 (2026-03-03)
+
+**Исправления:**
+
+- ✅ Обновлён README.md: версия v2.0.1, команда установки без указания версии
+
 ### v2.0.0 (2026-03-02)
 
 **Новые возможности:**
@@ -345,4 +351,4 @@ npm run format:check
 
 ---
 
-**Qwen Alpha v2.0** — универсальная платформа для создания AI-консультантов! 🚀
+**Qwen Alpha v2.0.1** — универсальная платформа для создания AI-консультантов! 🚀
